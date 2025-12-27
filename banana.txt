@@ -1,0 +1,134 @@
+--// BANANA CAT HUB BY BAO (FOR YOUR GAME)
+
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local LocalPlayer = Players.LocalPlayer
+
+local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
+
+--■■■■■■■■■■■■■■■■■■ BUTTON BANANA CAT ■■■■■■■■■■■■■■■■■■
+
+local BananaButton = Instance.new("ImageButton", ScreenGui)
+BananaButton.Size = UDim2.new(0, 60, 0, 60)
+BananaButton.Position = UDim2.new(0, 10, 0.5, -30)
+BananaButton.BackgroundTransparency = 1
+
+-- 🟡 THAY ASSET ID hình Banana Cat tại đây
+BananaButton.Image = "rbxassetid://98977613945174"
+
+-- Hover hiệu ứng
+BananaButton.MouseEnter:Connect(function()
+	BananaButton.Size = UDim2.new(0, 65, 0, 65)
+end)
+BananaButton.MouseLeave:Connect(function()
+	BananaButton.Size = UDim2.new(0, 60, 0, 60)
+end)
+
+--■■■■■■■■■■■■■■■■■■ MENU CHÍNH ■■■■■■■■■■■■■■■■■■
+
+local MainFrame = Instance.new("Frame", ScreenGui)
+local Title = Instance.new("TextLabel", MainFrame)
+local ButtonFly = Instance.new("TextButton", MainFrame)
+local ButtonJump = Instance.new("TextButton", MainFrame)
+local ButtonAutoClick = Instance.new("TextButton", MainFrame)
+local ButtonNoFog = Instance.new("TextButton", MainFrame)
+
+-- Theme màu xanh
+local BLUE_BG  = Color3.fromRGB(15, 30, 60)
+local BLUE_BTN = Color3.fromRGB(30, 90, 180)
+local BLUE_BTN_HOVER = Color3.fromRGB(40, 120, 220)
+local BLUE_TEXT = Color3.fromRGB(150, 200, 255)
+local BLUE_BORDER = Color3.fromRGB(0, 130, 255)
+
+MainFrame.Size = UDim2.new(0, 270, 0, 260)
+MainFrame.Position = UDim2.new(0.05, 0, 0.3, 0)
+MainFrame.BackgroundColor3 = BLUE_BG
+MainFrame.Visible = false
+
+local border = Instance.new("UIStroke", MainFrame)
+border.Thickness = 3
+border.Color = BLUE_BORDER
+
+Instance.new("UICorner", MainFrame)
+
+--🔥 Đổi tên UI tại đây
+Title.Text = "🍌 BANANA CAT HUB BY BAO 🐱"
+Title.Size = UDim2.new(1, 0, 0, 35)
+Title.BackgroundTransparency = 1
+Title.TextColor3 = BLUE_TEXT
+Title.TextSize = 22
+Title.Font = Enum.Font.SourceSansBold
+
+--■■■■■■■■■■■■■■■■■■ TẠO NÚT ■■■■■■■■■■■■■■■■■■
+
+local function setupButton(btn, yPos, text)
+	btn.Text = text
+	btn.Size = UDim2.new(1, -20, 0, 35)
+	btn.Position = UDim2.new(0, 10, 0, yPos)
+	btn.BackgroundColor3 = BLUE_BTN
+	btn.TextColor3 = Color3.fromRGB(255,255,255)
+	btn.TextSize = 18
+	btn.Font = Enum.Font.SourceSans
+	Instance.new("UICorner", btn)
+
+	btn.MouseEnter:Connect(function() btn.BackgroundColor3 = BLUE_BTN_HOVER end)
+	btn.MouseLeave:Connect(function() btn.BackgroundColor3 = BLUE_BTN end)
+end
+
+setupButton(ButtonFly,      45,  "Bay")
+setupButton(ButtonJump,     85,  "Nhảy Cao")
+setupButton(ButtonAutoClick,125, "Nhấp Tự Động")
+setupButton(ButtonNoFog,    165, "Xóa Sương Mù")
+
+--■■■■■■■■■■■■■■■■■■ ANIMATION MỞ MENU ■■■■■■■■■■■■■■■■■■
+
+local function playOpenAnimation()
+	MainFrame.BackgroundTransparency = 1
+	MainFrame.Size = UDim2.new(0, 0, 0, 0)
+	MainFrame.Position = UDim2.new(0.05, -200, 0.3, 0)
+	MainFrame.Visible = true
+
+	local tween = TweenService:Create(MainFrame,
+		TweenInfo.new(0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+		{
+			BackgroundTransparency = 0,
+			Size = UDim2.new(0, 270, 0, 260),
+			Position = UDim2.new(0.05, 0, 0.3, 0)
+		}
+	)
+	tween:Play()
+end
+
+BananaButton.MouseButton1Click:Connect(function()
+	if MainFrame.Visible then
+		MainFrame.Visible = false
+	else
+		playOpenAnimation()
+	end
+end)
+
+--■■■■■■■■■■■■■■■■■■ CHỨC NĂNG ■■■■■■■■■■■■■■■■■■
+
+ButtonFly.MouseButton1Click:Connect(function()
+	local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+	local hrp = char:WaitForChild("HumanoidRootPart")
+	hrp.Anchored = not hrp.Anchored
+end)
+
+ButtonJump.MouseButton1Click:Connect(function()
+	local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+	char.Humanoid.JumpPower = 200
+end)
+
+ButtonAutoClick.MouseButton1Click:Connect(function()
+	while ButtonAutoClick.BackgroundColor3 == BLUE_BTN_HOVER do
+		mouse1click()
+		task.wait(0.1)
+	end
+end)
+
+ButtonNoFog.MouseButton1Click:Connect(function()
+	local Lighting = game:GetService("Lighting")
+	Lighting.FogStart = 0
+	Lighting.FogEnd = 999999
+end)
