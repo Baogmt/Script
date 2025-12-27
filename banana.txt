@@ -2,6 +2,7 @@
 
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 
 local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
@@ -12,11 +13,8 @@ local BananaButton = Instance.new("ImageButton", ScreenGui)
 BananaButton.Size = UDim2.new(0, 60, 0, 60)
 BananaButton.Position = UDim2.new(0, 10, 0.5, -30)
 BananaButton.BackgroundTransparency = 1
-
--- 🟡 THAY ASSET ID hình Banana Cat tại đây
 BananaButton.Image = "rbxassetid://98977613945174"
 
--- Hover hiệu ứng
 BananaButton.MouseEnter:Connect(function()
 	BananaButton.Size = UDim2.new(0, 65, 0, 65)
 end)
@@ -32,8 +30,8 @@ local ButtonFly = Instance.new("TextButton", MainFrame)
 local ButtonJump = Instance.new("TextButton", MainFrame)
 local ButtonAutoClick = Instance.new("TextButton", MainFrame)
 local ButtonNoFog = Instance.new("TextButton", MainFrame)
+local ButtonNoClip = Instance.new("TextButton", MainFrame)
 
--- Theme màu xanh
 local BLUE_BG  = Color3.fromRGB(15, 30, 60)
 local BLUE_BTN = Color3.fromRGB(30, 90, 180)
 local BLUE_BTN_HOVER = Color3.fromRGB(40, 120, 220)
@@ -42,7 +40,8 @@ local BLUE_BORDER = Color3.fromRGB(0, 130, 255)
 
 MainFrame.Size = UDim2.new(0, 270, 0, 260)
 MainFrame.Position = UDim2.new(0.05, 0, 0.3, 0)
-MainFrame.BackgroundColor3 = BLUE_BG
+MainFrame.Back
+LUE_BG
 MainFrame.Visible = false
 
 local border = Instance.new("UIStroke", MainFrame)
