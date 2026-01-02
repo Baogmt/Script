@@ -1,0 +1,93 @@
+Keyboard by genmini 
+local ScreenGui = Instance.new("ScreenGui")
+local ControlsFrame = Instance.new("Frame")
+local VIM = game:GetService("VirtualInputManager")
+
+-- Thiết lập ScreenGui
+ScreenGui.Name = "Fixed_Shift_Emulator"
+ScreenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+ScreenGui.ResetOnSpawn = false
+
+-- Đẩy khung WASD vào trong một chút (x = 60) để không bị khuất
+ControlsFrame.Name = "WASD_Frame"
+ControlsFrame.Parent = ScreenGui
+ControlsFrame.BackgroundTransparency = 1
+ControlsFrame.Position = UDim2.new(0, 70, 1, -210) 
+ControlsFrame.Size = UDim2.new(0, 150, 0, 150)
+
+local function createKey(name, pos, keycode, parent, size)
+    local button = Instance.new("TextButton")
+    button.Name = name
+    button.Parent = parent
+    button.Size = size or UDim2.new(0, 55, 0, 55)
+    button.Position = pos
+    button.Text = name
+    button.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    button.BackgroundTransparency = 0.4
+    button.TextColor3 = Color3.fromRGB(255, 255, 255)
+    button.Font = Enum.Font.SourceSansBold
+    button.TextSize = 20
+    button.AutoButtonColor = false
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(1, 0)
+    corner.Parent = button
+
+    button.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+            VIM:SendKeyEvent(true, keycode, false, game)
+            button.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+            button.TextColor3 = Color3.fromRGB(0, 0, 0)
+        end
+    end)
+
+    button.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+            VIM:SendKeyEvent(false, keycode, false, game)
+            button.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+            button.TextColor3 = Color3.fromRGB(255, 255, 255)
+        end
+    end)
+end
+
+-- Tọa độ cụm WASD sát nhau
+createKey("W", UDim2.new(0.5, -27, 0, 0), Enum.KeyCode.W, ControlsFrame)
+createKey("A", UDim2.new(0, 0, 0.5, -27), Enum.KeyCode.A, ControlsFrame)
+createKey("S", UDim2.new(0.5, -27, 1, -55), Enum.KeyCode.S, ControlsFrame)
+createKey("D", UDim2.new(1, -55, 0.5, -27), Enum.KeyCode.D, ControlsFrame)
+
+-- NÚT SHIFT: Đưa lên vị trí dễ bấm, không bị khuất (nằm phía trên bên trái nút W)
+createKey("SHIFT", UDim2.new(0, -50, 0, -20), Enum.KeyCode.LeftShift, ControlsFrame, UDim2.new(0, 65, 0, 50))
+
+-- Phím Space bên phải (Dịch vào trong thêm 1 tí cho chắc)
+local SpaceBtn = Instance.new("TextButton")
+SpaceBtn.Name = "SpaceBtn"
+SpaceBtn.Parent = ScreenGui
+SpaceBtn.Size = UDim2.new(0, 90, 0, 90)
+SpaceBtn.Position = UDim2.new(1, -160, 1, -170) 
+SpaceBtn.Text = "SPACE"
+SpaceBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+SpaceBtn.BackgroundTransparency = 0.4
+SpaceBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+SpaceBtn.Font = Enum.Font.SourceSansBold
+SpaceBtn.TextSize = 18
+
+local SpaceCorner = Instance.new("UICorner")
+SpaceCorner.CornerRadius = UDim.new(1, 0)
+SpaceCorner.Parent = SpaceBtn
+
+SpaceBtn.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+        VIM:SendKeyEvent(true, Enum.KeyCode.Space, false, game)
+        SpaceBtn.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+        SpaceBtn.TextColor3 = Color3.fromRGB(0, 0, 0)
+    end
+end)
+
+SpaceBtn.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+        VIM:SendKeyEvent(false, Enum.KeyCode.Space, false, game)
+        SpaceBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+        SpaceBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    end
+end)
