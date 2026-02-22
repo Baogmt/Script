@@ -1,0 +1,213 @@
+-- ================= BXORE4L FULL SYSTEM =================
+
+local player = game.Players.LocalPlayer
+local runService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local Lighting = game:GetService("Lighting")
+
+-- Không tạo lại nếu đã tồn tại
+if player:WaitForChild("PlayerGui"):FindFirstChild("bxore4lGUI") then
+	return
+end
+
+-- ================= GUI =================
+
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "bxore4lGUI"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = player:WaitForChild("PlayerGui")
+
+local MainFrame = Instance.new("TextLabel")
+MainFrame.Parent = ScreenGui
+MainFrame.Size = UDim2.new(0, 500, 0, 220)
+MainFrame.Position = UDim2.new(0.5, -250, 0.3, 0)
+MainFrame.BackgroundColor3 = Color3.fromRGB(20,20,20)
+MainFrame.Text = "bxore4l"
+MainFrame.TextScaled = true
+MainFrame.Font = Enum.Font.GothamBlack
+MainFrame.BorderSizePixel = 0
+MainFrame.Active = true
+MainFrame.TextStrokeTransparency = 0
+MainFrame.TextStrokeColor3 = Color3.new(0,0,0)
+Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0,20)
+
+-- ================= RGB =================
+
+local hue = 0
+runService.RenderStepped:Connect(function(delta)
+	hue += delta * 0.3
+	if hue > 1 then hue = 0 end
+	
+	MainFrame.TextColor3 = Color3.fromHSV(hue,1,1)
+	MainFrame.BackgroundColor3 = Color3.fromHSV(hue,0.4,0.25)
+end)
+
+-- ================= DRAG PC + MOBILE =================
+
+local dragging = false
+local dragInput
+local dragStart
+local startPos
+
+local function update(input)
+	local delta = input.Position - dragStart
+	MainFrame.Position = UDim2.new(
+		startPos.X.Scale,
+		startPos.X.Offset + delta.X,
+		startPos.Y.Scale,
+		startPos.Y.Offset + delta.Y
+	)
+end
+
+MainFrame.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1
+	or input.UserInputType == Enum.UserInputType.Touch then
+		
+		dragging = true
+		dragStart = input.Position
+		startPos = MainFrame.Position
+		
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then
+				dragging = false
+			end
+		end)
+	end
+end)
+
+MainFrame.InputChanged:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseMovement
+	or input.UserInputType == Enum.UserInputType.Touch then
+		dragInput = input
+	end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+	if input == dragInput and dragging then
+		update(input)
+	end
+end)
+
+-- ================= SHIFT LOCK =================
+
+local shiftLockEnabled = false
+
+local ShiftButton = Instance.new("TextButton")
+ShiftButton.Parent = MainFrame
+ShiftButton.Size = UDim2.new(0,180,0,40)
+ShiftButton.Position = UDim2.new(0.5,-90,1,-135)
+ShiftButton.Text = "Shift Lock: OFF"
+ShiftButton.Font = Enum.Font.GothamBold
+ShiftButton.TextScaled = true
+ShiftButton.BackgroundColor3 = Color3.fromRGB(40,40,40)
+ShiftButton.TextColor3 = Color3.new(1,1,1)
+ShiftButton.BorderSizePixel = 0
+Instance.new("UICorner", ShiftButton)
+
+local function updateShift()
+	if shiftLockEnabled then
+		player.CameraMode = Enum.CameraMode.LockFirstPerson
+		ShiftButton.Text = "Shift Lock: ON"
+	else
+		player.CameraMode = Enum.CameraMode.Classic
+		ShiftButton.Text = "Shift Lock: OFF"
+	end
+end
+
+ShiftButton.MouseButton1Click:Connect(function()
+	shiftLockEnabled = not shiftLockEnabled
+	updateShift()
+end)
+
+player.CharacterAdded:Connect(function()
+	task.wait(0.5)
+	if shiftLockEnabled then
+		updateShift()
+	end
+end)
+
+-- ================= ANTI LAG =================
+
+local antiLagEnabled = false
+
+local LagButton = Instance.new("TextButton")
+LagButton.Parent = MainFrame
+LagButton.Size = UDim2.new(0,180,0,40)
+LagButton.Position = UDim2.new(0.5,-90,1,-90)
+LagButton.Text = "Anti Lag: OFF"
+LagButton.Font = Enum.Font.GothamBold
+LagButton.TextScaled = true
+LagButton.BackgroundColor3 = Color3.fromRGB(40,40,40)
+LagButton.TextColor3 = Color3.new(1,1,1)
+LagButton.BorderSizePixel = 0
+Instance.new("UICorner", LagButton)
+
+local function enableAntiLag()
+	Lighting.GlobalShadows = false
+	Lighting.Brightness = 1
+	Lighting.FogEnd = 100000
+	
+	for _,v in pairs(Lighting:GetChildren()) do
+		if v:IsA("BloomEffect")
+		or v:IsA("BlurEffect")
+		or v:IsA("ColorCorrectionEffect")
+		or v:IsA("SunRaysEffect")
+		or v:IsA("DepthOfFieldEffect") then
+			v.Enabled = false
+		end
+	end
+	
+	for _,v in pairs(workspace:GetDescendants()) do
+		if v:IsA("ParticleEmitter") or v:IsA("Trail") then
+			v.Enabled = false
+		end
+		if v:IsA("BasePart") then
+			v.Material = Enum.Material.Plastic
+			v.Reflectance = 0
+		end
+	end
+end
+
+LagButton.MouseButton1Click:Connect(function()
+	antiLagEnabled = not antiLagEnabled
+	
+	if antiLagEnabled then
+		LagButton.Text = "Anti Lag: ON"
+		enableAntiLag()
+	else
+		LagButton.Text = "Anti Lag: OFF"
+	end
+end)
+
+-- ================= DOUBLE JUMP =================
+
+local function setupCharacter(character)
+	local humanoid = character:WaitForChild("Humanoid")
+
+	local canDoubleJump = false
+	local hasDoubleJumped = false
+
+	humanoid.StateChanged:Connect(function(_, newState)
+		if newState == Enum.HumanoidStateType.Freefall then
+			canDoubleJump = true
+		end
+		
+		if newState == Enum.HumanoidStateType.Landed then
+			hasDoubleJumped = false
+			canDoubleJump = false
+		end
+	end)
+
+	UserInputService.JumpRequest:Connect(function()
+		if canDoubleJump and not hasDoubleJumped then
+			hasDoubleJumped = true
+			humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+		end
+	end)
+end
+
+if player.Character then
+	setupCharacter(player.Character)
+end
+
+player.CharacterAdded:Connect(setupCharacter)
