@@ -1,0 +1,33 @@
+local Players = game:GetService("Players")
+local InsertService = game:GetService("InsertService")
+
+local ACCESSORY_ID = 94154992535289
+
+local function equipAccessory(character)
+	local humanoid = character:WaitForChild("Humanoid")
+
+	local success, model = pcall(function()
+		return InsertService:LoadAsset(ACCESSORY_ID)
+	end)
+
+	if not success or not model then
+		warn("Không tải được asset:", ACCESSORY_ID)
+		return
+	end
+
+	local accessory = model:FindFirstChildWhichIsA("Accessory", true)
+
+	if accessory then
+		humanoid:AddAccessory(accessory)
+	else
+		warn("Asset không phải Accessory.")
+	end
+
+	model:Destroy()
+end
+
+Players.PlayerAdded:Connect(function(player)
+	player.CharacterAdded:Connect(function(character)
+		equipAccessory(character)
+	end)
+end)
