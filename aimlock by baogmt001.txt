@@ -1,0 +1,82 @@
+local Players = game:GetService("Players")
+local UIS = game:GetService("UserInputService")
+
+local Player = Players.LocalPlayer
+local PlayerGui = Player:WaitForChild("PlayerGui")
+
+local Gui = Instance.new("ScreenGui")
+Gui.Name = "BaoGMT001_Aim"
+Gui.ResetOnSpawn = false
+Gui.Parent = PlayerGui
+
+local Button = Instance.new("TextButton")
+Button.Parent = Gui
+Button.Size = UDim2.new(0,90,0,40)
+Button.Position = UDim2.new(0.78,0,0.75,0)
+
+Button.Text = "baogmt001"
+Button.TextScaled = true
+Button.Font = Enum.Font.GothamBold
+Button.TextColor3 = Color3.fromRGB(255,255,255)
+
+Button.BackgroundColor3 = Color3.fromRGB(35,35,35)
+Button.AutoButtonColor = true
+
+local Corner = Instance.new("UICorner")
+Corner.CornerRadius = UDim.new(0,10)
+Corner.Parent = Button
+
+local Stroke = Instance.new("UIStroke")
+Stroke.Thickness = 2
+Stroke.Color = Color3.fromRGB(255,255,255)
+Stroke.Parent = Button
+
+local AimEnabled = false
+
+Button.MouseButton1Click:Connect(function()
+	AimEnabled = not AimEnabled
+
+	if AimEnabled then
+		Button.BackgroundColor3 = Color3.fromRGB(0,170,255)
+		print("Auto Aim ON")
+	else
+		Button.BackgroundColor3 = Color3.fromRGB(35,35,35)
+		print("Auto Aim OFF")
+	end
+end)
+
+-- Kéo thả
+local Dragging = false
+local DragStart
+local StartPos
+
+Button.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.Touch
+	or input.UserInputType == Enum.UserInputType.MouseButton1 then
+
+		Dragging = true
+		DragStart = input.Position
+		StartPos = Button.Position
+
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then
+				Dragging = false
+			end
+		end)
+	end
+end)
+
+UIS.InputChanged:Connect(function(input)
+	if Dragging and (input.UserInputType == Enum.UserInputType.Touch
+	or input.UserInputType == Enum.UserInputType.MouseMovement) then
+
+		local Delta = input.Position - DragStart
+
+		Button.Position = UDim2.new(
+			StartPos.X.Scale,
+			StartPos.X.Offset + Delta.X,
+			StartPos.Y.Scale,
+			StartPos.Y.Offset + Delta.Y
+		)
+	end
+end)
