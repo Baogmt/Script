@@ -1,0 +1,68 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+
+local localPlayer = Players.LocalPlayer
+local camera = workspace.CurrentCamera
+
+local MAX_DISTANCE = 200 -- chỉnh range thấy người (studs)
+
+local function createBillboard(targetChar)
+	local head = targetChar:FindFirstChild("Head")
+	if not head then return end
+
+	-- tránh tạo trùng
+	if head:FindFirstChild("Locator") then return end
+
+	local billboard = Instance.new("BillboardGui")
+	billboard.Name = "Locator"
+	billboard.Size = UDim2.new(0, 100, 0, 40)
+	billboard.StudsOffset = Vector3.new(0, 2.5, 0)
+	billboard.AlwaysOnTop = true
+	billboard.Parent = head
+
+	local text = Instance.new("TextLabel")
+	text.Size = UDim2.new(1, 0, 1, 0)
+	text.BackgroundTransparency = 1
+	text.TextColor3 = Color3.fromRGB(255, 60, 60)
+	text.TextStrokeTransparency = 0
+	text.TextScaled = true
+	text.Font = Enum.Font.GothamBold
+	text.Parent = billboard
+
+	return billboard, text
+end
+
+local function updateLocator()
+	local myChar = localPlayer.Character
+	if not myChar then return end
+
+	local myRoot = myChar:FindFirstChild("HumanoidRootPart")
+	if not myRoot then return end
+
+	for _, plr in pairs(Players:GetPlayers()) do
+		if plr ~= localPlayer and plr.Character then
+			local char = plr.Character
+			local root = char:FindFirstChild("HumanoidRootPart")
+
+			if root then
+				local dist = (root.Position - myRoot.Position).Magnitude
+
+				if dist <= MAX_DISTANCE then
+					local billboard, text = createBillboard(char)
+
+					if billboard and text then
+						billboard.Enabled = true
+						text.Text = plr.Name .. " [" .. math.floor(dist) .. "m]"
+					end
+				else
+					local head = char:FindFirstChild("Head")
+					if head and head:FindFirstChild("Locator") then
+						head.Locator.Enabled = false
+					end
+				end
+			end
+		end
+	end
+end
+
+RunService.RenderStepped:Connect(updateLocator)
