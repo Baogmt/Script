@@ -1,0 +1,117 @@
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+-- Tạo GUI
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "CounterCancelGUI"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = playerGui
+
+-- Tạo nút
+local button = Instance.new("TextButton")
+button.Parent = screenGui
+button.Size = UDim2.new(0, 140, 0, 40)
+button.Position = UDim2.new(0.75, 0, 0.65, 0)
+button.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+button.Text = "Counter Cancel"
+button.TextColor3 = Color3.new(1,1,1)
+button.TextScaled = true
+button.BorderSizePixel = 0
+button.Active = true
+
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0,8)
+corner.Parent = button
+
+-- Kéo nút
+local dragging = false
+local dragStart
+local startPos
+
+button.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1
+	or input.UserInputType == Enum.UserInputType.Touch then
+		dragging = true
+		dragStart = input.Position
+		startPos = button.Position
+
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then
+				dragging = false
+			end
+		end)
+	end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+	if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement
+		or input.UserInputType == Enum.UserInputType.Touch) then
+
+		local delta = input.Position - dragStart
+		button.Position = UDim2.new(
+			startPos.X.Scale,
+			startPos.X.Offset + delta.X,
+			startPos.Y.Scale,
+			startPos.Y.Offset + delta.Y
+		)
+	end
+end)
+
+-- Counter Cancel
+local canDash = true
+local range = 15
+
+local function counterCancel()
+	if not canDash then return end
+
+	local character = player.Character
+	if not character or not character:FindFirstChild("HumanoidRootPart") then
+		return
+	end
+
+	local rootPart = character.HumanoidRootPart
+
+	local closestEnemy
+	local minDistance = range
+
+	for _, otherPlayer in ipairs(Players:GetPlayers()) do
+		if otherPlayer ~= player
+			and otherPlayer.Character
+			and otherPlayer.Character:FindFirstChild("HumanoidRootPart") then
+
+			local enemyRoot = otherPlayer.Character.HumanoidRootPart
+			local distance = (rootPart.Position - enemyRoot.Position).Magnitude
+
+			if distance < minDistance then
+				minDistance = distance
+				closestEnemy = enemyRoot
+			end
+		end
+	end
+
+	if closestEnemy then
+		canDash = false
+		button.BackgroundColor3 = Color3.fromRGB(100,100,100)
+
+		-- Giữ nguyên tính năng của bạn
+		rootPart.CFrame = closestEnemy.CFrame * CFrame.new(0,0,3)
+
+		task.wait(4.5)
+
+		canDash = true
+		button.BackgroundColor3 = Color3.fromRGB(0,170,255)
+	end
+end
+
+-- Bấm nút
+button.Activated:Connect(counterCancel)
+
+-- Bấm Q
+UserInputService.InputBegan:Connect(function(input, gp)
+	if not gp and input.KeyCode == Enum.KeyCode.Q then
+		counterCancel()
+	end
+end)
