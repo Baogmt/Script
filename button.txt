@@ -1,0 +1,146 @@
+local UIS = game:GetService("UserInputService")
+local Players = game:GetService("Players")
+
+local player = Players.LocalPlayer
+
+local gui = Instance.new("ScreenGui")
+gui.Name = "CircleControls"
+gui.ResetOnSpawn = false
+gui.Parent = player:WaitForChild("PlayerGui")
+
+-- trạng thái
+local editMode = false
+local dragObj = nil
+local dragging = false
+
+local function action(key)
+    print("ACTION:", key)
+end
+
+-- =========================
+-- 🔵 TẠO NÚT TRÒN
+-- =========================
+local function createCircle(name, text, pos, size)
+    local btn = Instance.new("TextButton")
+    btn.Name = name
+    btn.Size = size or UDim2.new(0, 65, 0, 65)
+    btn.Position = pos
+    btn.Text = text
+    btn.BackgroundColor3 = Color3.fromRGB(35,35,35)
+    btn.TextColor3 = Color3.new(1,1,1)
+    btn.AutoButtonColor = true
+    btn.Parent = gui
+
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(1,0) -- 🔥 TRÒN 100%
+    corner.Parent = btn
+
+    btn.MouseButton1Click:Connect(function()
+        action(text)
+    end)
+
+    -- kéo khi edit mode
+    btn.InputBegan:Connect(function(input)
+        if not editMode then return end
+        if input.UserInputType == Enum.UserInputType.MouseButton1
+        or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragObj = btn
+        end
+    end)
+
+    return btn
+end
+
+-- =========================
+-- 🎮 WASD
+-- =========================
+createCircle("W","W",UDim2.new(0.15,0,0.55,0))
+createCircle("A","A",UDim2.new(0.08,0,0.65,0))
+createCircle("S","S",UDim2.new(0.15,0,0.65,0))
+createCircle("D","D",UDim2.new(0.22,0,0.65,0))
+
+-- =========================
+-- ⚔️ SKILL Q F
+-- =========================
+createCircle("Q","Q",UDim2.new(0.8,0,0.55,0))
+createCircle("F","F",UDim2.new(0.9,0,0.55,0))
+
+-- =========================
+-- 🔢 SKILL 1-4
+-- =========================
+createCircle("1","1",UDim2.new(0.65,0,0.8,0),UDim2.new(0,55,0,55))
+createCircle("2","2",UDim2.new(0.72,0,0.8,0),UDim2.new(0,55,0,55))
+createCircle("3","3",UDim2.new(0.79,0,0.8,0),UDim2.new(0,55,0,55))
+createCircle("4","4",UDim2.new(0.86,0,0.8,0),UDim2.new(0,55,0,55))
+
+-- =========================
+-- 🔫 ATTACK (chuột trái mobile)
+-- =========================
+createCircle("ATK","⚔",UDim2.new(0.85,0,0.6,0),UDim2.new(0,75,0,75))
+
+-- =========================
+-- 🏃 SHIFT / CTRL
+-- =========================
+createCircle("SHIFT","S",UDim2.new(0.75,0,0.65,0),UDim2.new(0,60,0,60))
+createCircle("CTRL","C",UDim2.new(0.75,0,0.75,0),UDim2.new(0,60,0,60))
+
+-- =========================
+-- ⚙ SETTINGS
+-- =========================
+local settings = createCircle("SET","⚙",UDim2.new(0.9,0,0.1,0),UDim2.new(0,55,0,55))
+
+settings.MouseButton1Click:Connect(function()
+    editMode = not editMode
+    settings.Text = editMode and "✔" or "⚙"
+end)
+
+-- =========================
+-- 🖱 DRAG SYSTEM
+-- =========================
+UIS.InputChanged:Connect(function(input)
+    if dragging and dragObj and editMode then
+        if input.UserInputType == Enum.UserInputType.MouseMovement
+        or input.UserInputType == Enum.UserInputType.Touch then
+
+            dragObj.Position = UDim2.new(
+                dragObj.Position.X.Scale,
+                dragObj.Position.X.Offset + input.Delta.X,
+                dragObj.Position.Y.Scale,
+                dragObj.Position.Y.Offset + input.Delta.Y
+            )
+        end
+    end
+end)
+
+UIS.InputEnded:Connect(function()
+    dragging = false
+    dragObj = nil
+end)
+
+-- =========================
+-- ⌨ PC INPUT
+-- =========================
+UIS.InputBegan:Connect(function(input, gp)
+    if gp then return end
+
+    if input.KeyCode == Enum.KeyCode.W then action("W") end
+    if input.KeyCode == Enum.KeyCode.A then action("A") end
+    if input.KeyCode == Enum.KeyCode.S then action("S") end
+    if input.KeyCode == Enum.KeyCode.D then action("D") end
+
+    if input.KeyCode == Enum.KeyCode.Q then action("Q") end
+    if input.KeyCode == Enum.KeyCode.F then action("F") end
+
+    if input.KeyCode == Enum.KeyCode.One then action("1") end
+    if input.KeyCode == Enum.KeyCode.Two then action("2") end
+    if input.KeyCode == Enum.KeyCode.Three then action("3") end
+    if input.KeyCode == Enum.KeyCode.Four then action("4") end
+
+    if input.KeyCode == Enum.KeyCode.LeftShift then action("SHIFT") end
+    if input.KeyCode == Enum.KeyCode.LeftControl then action("CTRL") end
+
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        action("ATTACK")
+    end
+end)
