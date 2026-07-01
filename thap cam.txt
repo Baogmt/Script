@@ -1,0 +1,118 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+
+local player = Players.LocalPlayer
+local camera = workspace.CurrentCamera
+
+------------------------------------------------
+-- ⚙️ STATE
+------------------------------------------------
+local lockEnabled = false
+local lockedTarget = nil
+
+------------------------------------------------
+-- 🎯 FIND NEAREST TARGET
+------------------------------------------------
+local function getNearest()
+	local char = player.Character
+	if not char then return end
+
+	local root = char:FindFirstChild("HumanoidRootPart")
+	if not root then return end
+
+	local closest, dist = nil, 120
+
+	for _,p in pairs(Players:GetPlayers()) do
+		if p ~= player and p.Character then
+			local r = p.Character:FindFirstChild("HumanoidRootPart")
+			if r then
+				local d = (r.Position - root.Position).Magnitude
+				if d < dist then
+					dist = d
+					closest = p.Character
+				end
+			end
+		end
+	end
+
+	return closest
+end
+
+------------------------------------------------
+-- 🎯 LOCK CAMERA
+------------------------------------------------
+RunService.RenderStepped:Connect(function()
+	if lockEnabled then
+		if not lockedTarget then
+			lockedTarget = getNearest()
+		end
+	else
+		lockedTarget = nil
+	end
+
+	if lockedTarget and lockedTarget:FindFirstChild("HumanoidRootPart") then
+		camera.CFrame = CFrame.new(
+			camera.CFrame.Position,
+			lockedTarget.HumanoidRootPart.Position
+		)
+	end
+end)
+
+------------------------------------------------
+-- 📱 MOBILE UI
+------------------------------------------------
+local gui = Instance.new("ScreenGui")
+gui.Name = "CombatUI"
+gui.ResetOnSpawn = false
+gui.Parent = player:WaitForChild("PlayerGui")
+
+-- LOCK BUTTON
+local lockBtn = Instance.new("TextButton")
+lockBtn.Size = UDim2.new(0, 100, 0, 40)
+lockBtn.Position = UDim2.new(0.75, 0, 0.7, 0)
+lockBtn.BackgroundColor3 = Color3.fromRGB(255,170,0)
+lockBtn.TextColor3 = Color3.fromRGB(255,255,255)
+lockBtn.Text = "LOCK OFF"
+lockBtn.Parent = gui
+
+Instance.new("UICorner", lockBtn).CornerRadius = UDim.new(0,10)
+
+lockBtn.MouseButton1Click:Connect(function()
+	lockEnabled = not lockEnabled
+
+	if lockEnabled then
+		lockBtn.Text = "LOCK ON"
+		lockBtn.BackgroundColor3 = Color3.fromRGB(0,200,100)
+	else
+		lockBtn.Text = "LOCK OFF"
+		lockBtn.BackgroundColor3 = Color3.fromRGB(255,170,0)
+	end
+end)
+
+-- TELEPORT BUTTON (client only visual trigger)
+local tpBtn = Instance.new("TextButton")
+tpBtn.Size = UDim2.new(0, 100, 0, 40)
+tpBtn.Position = UDim2.new(0.75, 0, 0.62, 0)
+tpBtn.BackgroundColor3 = Color3.fromRGB(80,180,255)
+tpBtn.TextColor3 = Color3.fromRGB(255,255,255)
+tpBtn.Text = "TELEPORT"
+tpBtn.Parent = gui
+
+Instance.new("UICorner", tpBtn).CornerRadius = UDim.new(0,10)
+
+tpBtn.MouseButton1Click:Connect(function()
+	local char = player.Character
+	if not char then return end
+
+	local root = char:FindFirstChild("HumanoidRootPart")
+	if not root then return end
+
+	root.CFrame = root.CFrame + root.CFrame.LookVector * 10
+end)
+
+------------------------------------------------
+-- 📦 EXPOSE (optional dùng cho server/other scripts)
+------------------------------------------------
+_G.GetLockState = function()
+	return lockEnabled
+end
