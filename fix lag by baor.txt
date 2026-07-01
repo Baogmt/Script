@@ -1,0 +1,80 @@
+local Lighting = game:GetService("Lighting")
+local Workspace = game:GetService("Workspace")
+local Players = game:GetService("Players")
+
+local player = Players.LocalPlayer
+
+-- GUI
+local gui = Instance.new("ScreenGui")
+gui.Name = "LagFixUI"
+gui.Parent = player:WaitForChild("PlayerGui")
+
+local button = Instance.new("TextButton")
+button.Size = UDim2.new(0, 160, 0, 50)
+button.Position = UDim2.new(0.8, 0, 0.1, 0)
+button.Text = "FIX LAG"
+button.BackgroundColor3 = Color3.fromRGB(40,40,40)
+button.TextColor3 = Color3.new(1,1,1)
+button.Parent = gui
+
+local label = Instance.new("TextLabel")
+label.Size = UDim2.new(0, 200, 0, 40)
+label.Position = UDim2.new(0.5, -100, 0.05, 0)
+label.BackgroundTransparency = 1
+label.Text = ""
+label.TextColor3 = Color3.fromRGB(255,255,255)
+label.TextScaled = true
+label.Parent = gui
+
+local enabled = false
+
+-- =========================
+-- 🔻 APPLY LAG FIX
+-- =========================
+local function enableLagFix()
+    Lighting.GlobalShadows = false
+    Lighting.FogEnd = 100000
+    Lighting.Brightness = 1
+
+    for _,v in pairs(Lighting:GetChildren()) do
+        if v:IsA("PostEffect") then
+            v.Enabled = false
+        end
+    end
+
+    for _,v in pairs(Workspace:GetDescendants()) do
+        if v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Smoke") or v:IsA("Fire") then
+            v.Enabled = false
+        elseif v:IsA("BasePart") then
+            v.CastShadow = false
+        end
+    end
+
+    Workspace.StreamingEnabled = true
+
+    label.Text = "Fix Lag by Bảo"
+end
+
+-- =========================
+-- 🔄 RESET (basic restore)
+-- =========================
+local function disableLagFix()
+    label.Text = ""
+
+    Lighting.GlobalShadows = true
+end
+
+-- =========================
+-- 🔘 BUTTON TOGGLE
+-- =========================
+button.MouseButton1Click:Connect(function()
+    enabled = not enabled
+
+    if enabled then
+        button.Text = "FIX ON"
+        enableLagFix()
+    else
+        button.Text = "FIX OFF"
+        disableLagFix()
+    end
+end)
