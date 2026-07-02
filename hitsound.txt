@@ -1,0 +1,15 @@
+local Debris = game:GetService("Debris")
+
+humanoid:TakeDamage(3)
+
+local root = humanoid.Parent:FindFirstChild("HumanoidRootPart")
+if root then
+	local hitSound = Instance.new("Sound")
+	hitSound.SoundId = "rbxassetid://5276754334"
+	hitSound.Volume = 1
+	hitSound.RollOffMaxDistance = 50
+	hitSound.Parent = root
+	hitSound:Play()
+
+	Debris:AddItem(hitSound, 2)
+end
