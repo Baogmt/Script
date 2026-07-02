@@ -1,0 +1,20 @@
+local InsertService = game:GetService("InsertService")
+local Players = game:GetService("Players")
+
+local ASSET_ID = 3141364957
+
+Players.PlayerAdded:Connect(function(player)
+	player.CharacterAdded:Connect(function(character)
+		local success, model = pcall(function()
+			return InsertService:LoadAsset(ASSET_ID)
+		end)
+
+		if success and model then
+			local accessory = model:FindFirstChildWhichIsA("Accessory", true)
+			if accessory then
+				accessory.Parent = character
+			end
+			model:Destroy()
+		end
+	end)
+end)
