@@ -1,0 +1,160 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+
+local player = Players.LocalPlayer
+
+local lockEnabled = false
+local lockedTarget = nil
+
+------------------------------------------------
+-- GUI
+------------------------------------------------
+
+local gui = Instance.new("ScreenGui")
+gui.Name = "LockGUI"
+gui.ResetOnSpawn = false
+gui.Parent = player:WaitForChild("PlayerGui")
+
+local lockBtn = Instance.new("TextButton")
+lockBtn.Size = UDim2.new(0,100,0,60)
+lockBtn.Position = UDim2.new(0.75,0,0.7,0)
+lockBtn.BackgroundColor3 = Color3.fromRGB(20,20,20)
+lockBtn.TextColor3 = Color3.fromRGB(120,255,255)
+lockBtn.TextScaled = true
+lockBtn.Text = "LOCK OFF"
+lockBtn.BorderSizePixel = 0
+lockBtn.Parent = gui
+
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0,10)
+corner.Parent = lockBtn
+
+------------------------------------------------
+-- KÉO NÚT
+------------------------------------------------
+
+local dragging = false
+local dragInput
+local dragStart
+local startPos
+
+lockBtn.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.Touch
+	or input.UserInputType == Enum.UserInputType.MouseButton1 then
+
+		dragging = true
+		dragStart = input.Position
+		startPos = lockBtn.Position
+
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then
+				dragging = false
+			end
+		end)
+	end
+end)
+
+lockBtn.InputChanged:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.Touch
+	or input.UserInputType == Enum.UserInputType.MouseMovement then
+		dragInput = input
+	end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+	if dragging and input == dragInput then
+		local delta = input.Position - dragStart
+
+		lockBtn.Position = UDim2.new(
+			startPos.X.Scale,
+			startPos.X.Offset + delta.X,
+			startPos.Y.Scale,
+			startPos.Y.Offset + delta.Y
+		)
+	end
+end)
+
+------------------------------------------------
+-- TÌM MỤC TIÊU GẦN NHẤT
+------------------------------------------------
+
+local function getNearestTarget()
+	local character = player.Character
+	if not character then return nil end
+
+	local root = character:FindFirstChild("HumanoidRootPart")
+	if not root then return nil end
+
+	local nearest = nil
+	local nearestDistance = 120
+
+	for _, plr in ipairs(Players:GetPlayers()) do
+		if plr ~= player and plr.Character then
+			local enemyRoot = plr.Character:FindFirstChild("HumanoidRootPart")
+			local hum = plr.Character:FindFirstChild("Humanoid")
+
+			if enemyRoot and hum and hum.Health > 0 then
+				local d = (enemyRoot.Position - root.Position).Magnitude
+
+				if d < nearestDistance then
+					nearestDistance = d
+					nearest = plr.Character
+				end
+			end
+		end
+	end
+
+	return nearest
+end
+
+------------------------------------------------
+-- BẬT/TẮT LOCK
+------------------------------------------------
+
+lockBtn.MouseButton1Click:Connect(function()
+	lockEnabled = not lockEnabled
+
+	if lockEnabled then
+		lockBtn.Text = "LOCK ON"
+		lockedTarget = getNearestTarget()
+	else
+		lockBtn.Text = "LOCK OFF"
+		lockedTarget = nil
+	end
+end)
+
+------------------------------------------------
+-- SOFT LOCK (KHÔNG XOAY CAMERA)
+------------------------------------------------
+
+RunService.RenderStepped:Connect(function()
+
+	if not lockEnabled then
+		return
+	end
+
+	local character = player.Character
+	if not character then return end
+
+	local root = character:FindFirstChild("HumanoidRootPart")
+	if not root then return end
+
+	if not lockedTarget
+	or not lockedTarget.Parent
+	or not lockedTarget:FindFirstChild("HumanoidRootPart") then
+
+		lockedTarget = getNearestTarget()
+	end
+
+	if lockedTarget then
+		local targetPos = lockedTarget.HumanoidRootPart.Position
+		local myPos = root.Position
+
+		-- Chỉ xoay ngang, không xoay lên/xuống
+		root.CFrame = CFrame.lookAt(
+			myPos,
+			Vector3.new(targetPos.X, myPos.Y, targetPos.Z)
+		)
+	end
+end)
