@@ -1,0 +1,112 @@
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+-- Tạo ScreenGui
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "BaoGUI"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = playerGui
+
+-- Hàm tạo nút
+local function CreateButton(name, text, posY, color)
+	local btn = Instance.new("TextButton")
+	btn.Name = name
+	btn.Parent = screenGui
+	btn.Size = UDim2.new(0,140,0,40)
+	btn.Position = UDim2.new(0.75,0,posY,0)
+	btn.BackgroundColor3 = color
+	btn.Text = text
+	btn.TextScaled = true
+	btn.TextColor3 = Color3.new(1,1,1)
+	btn.BorderSizePixel = 0
+	btn.Active = true
+
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0,8)
+	corner.Parent = btn
+
+	return btn
+end
+
+local CounterButton = CreateButton(
+	"CounterButton",
+	"Counter Cancel",
+	0.60,
+	Color3.fromRGB(0,170,255)
+)
+
+local SettingButton = CreateButton(
+	"SettingButton",
+	"Settings",
+	0.67,
+	Color3.fromRGB(60,60,60)
+)
+
+local LagButton = CreateButton(
+	"LagButton",
+	"Low Graphics",
+	0.74,
+	Color3.fromRGB(0,170,0)
+)
+
+-- Cho phép kéo khi bật Settings
+local dragMode = false
+
+SettingButton.MouseButton1Click:Connect(function()
+	dragMode = not dragMode
+
+	if dragMode then
+		SettingButton.Text = "Lock"
+	else
+		SettingButton.Text = "Settings"
+	end
+end)
+
+local function MakeDraggable(button)
+
+	local dragging = false
+	local dragStart
+	local startPos
+
+	button.InputBegan:Connect(function(input)
+		if not dragMode then return end
+
+		if input.UserInputType == Enum.UserInputType.MouseButton1
+		or input.UserInputType == Enum.UserInputType.Touch then
+
+			dragging = true
+			dragStart = input.Position
+			startPos = button.Position
+
+			input.Changed:Connect(function()
+				if input.UserInputState == Enum.UserInputState.End then
+					dragging = false
+				end
+			end)
+		end
+	end)
+
+	UserInputService.InputChanged:Connect(function(input)
+		if dragging and (
+			input.UserInputType == Enum.UserInputType.MouseMovement
+			or input.UserInputType == Enum.UserInputType.Touch
+		) then
+
+			local delta = input.Position - dragStart
+
+			button.Position = UDim2.new(
+				startPos.X.Scale,
+				startPos.X.Offset + delta.X,
+				startPos.Y.Scale,
+				startPos.Y.Offset + delta.Y
+			)
+		end
+	end)
+end
+
+MakeDraggable(CounterButton)
+MakeDraggable(SettingButton)
+MakeDraggable(LagButton)
