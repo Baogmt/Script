@@ -1,0 +1,433 @@
+--==================================================
+-- FRUIT KING - CONTENT CREATOR PANEL
+-- MAIN + CREATOR + SETTINGS
+-- FLOATING TOGGLE + MOBILE DRAG
+--==================================================
+
+local Players = game:GetService("Players")
+local UIS = game:GetService("UserInputService")
+
+local Player = Players.LocalPlayer
+
+--==================================================
+-- SCREEN GUI
+--==================================================
+
+local Gui = Instance.new("ScreenGui")
+Gui.Name = "FruitKingCCPanel"
+Gui.ResetOnSpawn = false
+Gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+Gui.Parent = Player:WaitForChild("PlayerGui")
+
+--==================================================
+-- MAIN FRAME
+--==================================================
+
+local Main = Instance.new("Frame")
+Main.Name = "Main"
+Main.Size = UDim2.new(0, 330, 0, 390)
+Main.Position = UDim2.new(0.5, -165, 0.5, -195)
+
+Main.BackgroundColor3 = Color3.fromRGB(18, 20, 26)
+Main.BorderSizePixel = 0
+Main.Parent = Gui
+
+local MainCorner = Instance.new("UICorner")
+MainCorner.CornerRadius = UDim.new(0, 12)
+MainCorner.Parent = Main
+
+--==================================================
+-- TOP BAR
+--==================================================
+
+local TopBar = Instance.new("Frame")
+TopBar.Size = UDim2.new(1, 0, 0, 48)
+TopBar.BackgroundColor3 = Color3.fromRGB(25, 28, 36)
+TopBar.BorderSizePixel = 0
+TopBar.Parent = Main
+
+local TopCorner = Instance.new("UICorner")
+TopCorner.CornerRadius = UDim.new(0, 12)
+TopCorner.Parent = TopBar
+
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, -30, 1, 0)
+Title.Position = UDim2.new(0, 15, 0, 0)
+Title.BackgroundTransparency = 1
+Title.Text = "🍎  FRUIT KING"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.TextSize = 18
+Title.Font = Enum.Font.GothamBold
+Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.Parent = TopBar
+
+--==================================================
+-- CREATOR LABEL
+--==================================================
+
+local Creator = Instance.new("TextLabel")
+Creator.Size = UDim2.new(1, -30, 0, 20)
+Creator.Position = UDim2.new(0, 15, 0, 50)
+Creator.BackgroundTransparency = 1
+Creator.Text = "CONTENT CREATOR PANEL"
+Creator.TextColor3 = Color3.fromRGB(100, 180, 255)
+Creator.TextSize = 12
+Creator.Font = Enum.Font.GothamBold
+Creator.TextXAlignment = Enum.TextXAlignment.Left
+Creator.Parent = Main
+
+--==================================================
+-- TAB BAR
+--==================================================
+
+local Tabs = Instance.new("Frame")
+Tabs.Size = UDim2.new(1, -20, 0, 42)
+Tabs.Position = UDim2.new(0, 10, 0, 78)
+Tabs.BackgroundTransparency = 1
+Tabs.Parent = Main
+
+local TabLayout = Instance.new("UIListLayout")
+TabLayout.FillDirection = Enum.FillDirection.Horizontal
+TabLayout.Padding = UDim.new(0, 6)
+TabLayout.Parent = Tabs
+
+local function CreateTab(Name)
+
+    local Button = Instance.new("TextButton")
+
+    Button.Size = UDim2.new(0, 90, 1, 0)
+
+    Button.BackgroundColor3 = Color3.fromRGB(40, 100, 160)
+    Button.Text = Name
+
+    Button.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Button.TextSize = 13
+    Button.Font = Enum.Font.GothamBold
+
+    Button.BorderSizePixel = 0
+    Button.Parent = Tabs
+
+    local Corner = Instance.new("UICorner")
+    Corner.CornerRadius = UDim.new(0, 8)
+    Corner.Parent = Button
+
+    return Button
+end
+
+local MainTab = CreateTab("MAIN")
+local CC = CreateTab("CREATOR")
+local Settings = CreateTab("SETTINGS")
+
+--==================================================
+-- CONTENT
+--==================================================
+
+local Content = Instance.new("Frame")
+
+Content.Name = "Content"
+Content.Size = UDim2.new(1, -20, 1, -135)
+Content.Position = UDim2.new(0, 10, 0, 125)
+
+Content.BackgroundColor3 = Color3.fromRGB(25, 27, 34)
+Content.BorderSizePixel = 0
+Content.Parent = Main
+
+local ContentCorner = Instance.new("UICorner")
+ContentCorner.CornerRadius = UDim.new(0, 10)
+ContentCorner.Parent = Content
+
+--==================================================
+-- MAIN PAGE
+--==================================================
+
+local MainPage = Instance.new("Frame")
+
+MainPage.Size = UDim2.new(1, 0, 1, 0)
+MainPage.BackgroundTransparency = 1
+MainPage.Parent = Content
+
+local Welcome = Instance.new("TextLabel")
+
+Welcome.Size = UDim2.new(1, -20, 0, 50)
+Welcome.Position = UDim2.new(0, 10, 0, 10)
+
+Welcome.BackgroundTransparency = 1
+Welcome.Text = "MAIN"
+
+Welcome.TextColor3 = Color3.fromRGB(255, 255, 255)
+Welcome.TextSize = 20
+Welcome.Font = Enum.Font.GothamBold
+
+Welcome.Parent = MainPage
+
+local Status = Instance.new("TextLabel")
+
+Status.Size = UDim2.new(1, -20, 0, 60)
+Status.Position = UDim2.new(0, 10, 0, 65)
+
+Status.BackgroundColor3 = Color3.fromRGB(32, 35, 44)
+
+Status.Text = "● CC Panel: ONLINE\n● Mode: TEST SERVER"
+
+Status.TextColor3 = Color3.fromRGB(120, 220, 150)
+Status.TextSize = 14
+Status.Font = Enum.Font.Gotham
+Status.TextWrapped = true
+
+Status.Parent = MainPage
+
+local StatusCorner = Instance.new("UICorner")
+StatusCorner.CornerRadius = UDim.new(0, 8)
+StatusCorner.Parent = Status
+
+--==================================================
+-- CREATOR PAGE
+--==================================================
+
+local CreatorPage = Instance.new("Frame")
+
+CreatorPage.Size = UDim2.new(1, 0, 1, 0)
+CreatorPage.BackgroundTransparency = 1
+CreatorPage.Visible = false
+
+CreatorPage.Parent = Content
+
+local CreatorTitle = Instance.new("TextLabel")
+
+CreatorTitle.Size = UDim2.new(1, -20, 0, 40)
+CreatorTitle.Position = UDim2.new(0, 10, 0, 10)
+
+CreatorTitle.BackgroundTransparency = 1
+CreatorTitle.Text = "CONTENT CREATOR"
+
+CreatorTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+CreatorTitle.TextSize = 18
+CreatorTitle.Font = Enum.Font.GothamBold
+
+CreatorTitle.Parent = CreatorPage
+
+--==================================================
+-- SETTINGS PAGE
+--==================================================
+
+local SettingsPage = Instance.new("Frame")
+
+SettingsPage.Size = UDim2.new(1, 0, 1, 0)
+SettingsPage.BackgroundTransparency = 1
+SettingsPage.Visible = false
+
+SettingsPage.Parent = Content
+
+local SettingsTitle = Instance.new("TextLabel")
+
+SettingsTitle.Size = UDim2.new(1, -20, 0, 40)
+SettingsTitle.Position = UDim2.new(0, 10, 0, 10)
+
+SettingsTitle.BackgroundTransparency = 1
+SettingsTitle.Text = "SETTINGS"
+
+SettingsTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+SettingsTitle.TextSize = 18
+SettingsTitle.Font = Enum.Font.GothamBold
+
+SettingsTitle.Parent = SettingsPage
+
+--==================================================
+-- TAB SWITCH
+--==================================================
+
+local function ShowPage(Page)
+
+    MainPage.Visible = false
+    CreatorPage.Visible = false
+    SettingsPage.Visible = false
+
+    Page.Visible = true
+end
+
+MainTab.MouseButton1Click:Connect(function()
+    ShowPage(MainPage)
+end)
+
+CC.MouseButton1Click:Connect(function()
+    ShowPage(CreatorPage)
+end)
+
+Settings.MouseButton1Click:Connect(function()
+    ShowPage(SettingsPage)
+end)
+
+--==================================================
+-- DRAG MAIN PANEL
+--==================================================
+
+local Dragging = false
+local DragStart
+local StartPosition
+
+TopBar.InputBegan:Connect(function(Input)
+
+    if Input.UserInputType == Enum.UserInputType.MouseButton1
+    or Input.UserInputType == Enum.UserInputType.Touch then
+
+        Dragging = true
+        DragStart = Input.Position
+        StartPosition = Main.Position
+
+    end
+end)
+
+UIS.InputChanged:Connect(function(Input)
+
+    if Dragging then
+
+        if Input.UserInputType == Enum.UserInputType.MouseMovement
+        or Input.UserInputType == Enum.UserInputType.Touch then
+
+            local Delta = Input.Position - DragStart
+
+            Main.Position = UDim2.new(
+                StartPosition.X.Scale,
+                StartPosition.X.Offset + Delta.X,
+
+                StartPosition.Y.Scale,
+                StartPosition.Y.Offset + Delta.Y
+            )
+
+        end
+    end
+end)
+
+UIS.InputEnded:Connect(function(Input)
+
+    if Input.UserInputType == Enum.UserInputType.MouseButton1
+    or Input.UserInputType == Enum.UserInputType.Touch then
+
+        Dragging = false
+
+    end
+end)
+
+--==================================================
+-- FLOATING TOGGLE BUTTON
+--==================================================
+
+local FloatingButton = Instance.new("TextButton")
+
+FloatingButton.Name = "FloatingToggle"
+
+FloatingButton.Size = UDim2.new(0, 55, 0, 55)
+
+FloatingButton.Position = UDim2.new(
+    0,
+    20,
+    0.5,
+    -25
+)
+
+FloatingButton.BackgroundColor3 =
+    Color3.fromRGB(35, 100, 170)
+
+FloatingButton.Text = "CC"
+
+FloatingButton.TextColor3 =
+    Color3.fromRGB(255, 255, 255)
+
+FloatingButton.TextSize = 16
+FloatingButton.Font = Enum.Font.GothamBold
+
+FloatingButton.BorderSizePixel = 0
+FloatingButton.Parent = Gui
+
+local FloatingCorner = Instance.new("UICorner")
+
+FloatingCorner.CornerRadius = UDim.new(1, 0)
+FloatingCorner.Parent = FloatingButton
+
+local Stroke = Instance.new("UIStroke")
+
+Stroke.Thickness = 2
+Stroke.Color = Color3.fromRGB(100, 200, 255)
+
+Stroke.Parent = FloatingButton
+
+--==================================================
+-- PANEL ON / OFF
+--==================================================
+
+local PanelOpen = true
+
+FloatingButton.Activated:Connect(function()
+
+    PanelOpen = not PanelOpen
+
+    Main.Visible = PanelOpen
+
+    if PanelOpen then
+        FloatingButton.Text = "CC"
+    else
+        FloatingButton.Text = "▶"
+    end
+
+end)
+
+--==================================================
+-- DRAG FLOATING BUTTON
+--==================================================
+
+local DraggingButton = false
+local DragStartButton
+local StartButtonPosition
+
+FloatingButton.InputBegan:Connect(function(Input)
+
+    if Input.UserInputType == Enum.UserInputType.Touch
+    or Input.UserInputType == Enum.UserInputType.MouseButton1 then
+
+        DraggingButton = true
+        DragStartButton = Input.Position
+        StartButtonPosition = FloatingButton.Position
+
+    end
+end)
+
+UIS.InputChanged:Connect(function(Input)
+
+    if DraggingButton then
+
+        if Input.UserInputType == Enum.UserInputType.Touch
+        or Input.UserInputType == Enum.UserInputType.MouseMovement then
+
+            local Delta =
+                Input.Position - DragStartButton
+
+            FloatingButton.Position = UDim2.new(
+
+                StartButtonPosition.X.Scale,
+                StartButtonPosition.X.Offset + Delta.X,
+
+                StartButtonPosition.Y.Scale,
+                StartButtonPosition.Y.Offset + Delta.Y
+            )
+
+        end
+    end
+end)
+
+UIS.InputEnded:Connect(function(Input)
+
+    if Input.UserInputType == Enum.UserInputType.Touch
+    or Input.UserInputType == Enum.UserInputType.MouseButton1 then
+
+        DraggingButton = false
+
+    end
+end)
+
+--==================================================
+-- START
+--==================================================
+
+ShowPage(MainPage)
+
+print("Fruit King CC Panel loaded successfully.")
