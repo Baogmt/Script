@@ -1,0 +1,133 @@
+lua
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+--------------------------------------------------
+-- CHỜ GIAO DIỆN ROBLOX
+--------------------------------------------------
+
+local touchGui = playerGui:WaitForChild("TouchGui", 10)
+
+if not touchGui then
+	warn("Không tìm thấy TouchGui")
+	return
+end
+
+local touchFrame = touchGui:WaitForChild("TouchControlFrame")
+local jumpButton = touchFrame:WaitForChild("JumpButton")
+
+--------------------------------------------------
+-- CÀI ĐẶT
+--------------------------------------------------
+
+local locked = false
+
+-- Kích thước Jump
+local minSize = 40
+local maxSize = 180
+local sizeStep = 10
+
+-- Độ nhạy
+local sensitivity = 0
+local minSensitivity = 0
+local maxSensitivity = 20
+
+--------------------------------------------------
+-- TẠO SCREEN GUI
+--------------------------------------------------
+
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "JumpController"
+screenGui.ResetOnSpawn = false
+screenGui.IgnoreGuiInset = true
+screenGui.Parent = playerGui
+
+--------------------------------------------------
+-- HÀM TẠO NÚT
+--------------------------------------------------
+
+local function createButton(name, text, size, position)
+
+	local button = Instance.new("TextButton")
+
+	button.Name = name
+	button.Size = size
+	button.Position = position
+
+	button.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+	button.BackgroundTransparency = 0.1
+
+	button.TextColor3 = Color3.new(1, 1, 1)
+	button.TextScaled = true
+	button.Font = Enum.Font.GothamBold
+
+	button.Text = text
+	button.AutoButtonColor = true
+
+	button.Parent = screenGui
+
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 10)
+	corner.Parent = button
+
+	return button
+end
+
+--------------------------------------------------
+-- NÚT KHÓA
+--------------------------------------------------
+
+local lockButton = createButton(
+	"LockButton",
+	"🔓 MỞ KHÓA",
+	UDim2.new(0, 130, 0, 45),
+	UDim2.new(0, 20, 1, -70)
+)
+
+--------------------------------------------------
+-- NÚT TĂNG GIẢM KÍCH THƯỚC
+--------------------------------------------------
+
+local plusButton = createButton(
+	"PlusButton",
+	"+",
+	UDim2.new(0, 50, 0, 45),
+	UDim2.new(0, 160, 1, -70)
+)
+
+local minusButton = createButton(
+	"MinusButton",
+	"-",
+	UDim2.new(0, 50, 0, 45),
+	UDim2.new(0, 220, 1, -70)
+)
+
+--------------------------------------------------
+-- HIỂN THỊ ĐỘ NHẠY
+--------------------------------------------------
+
+local sensitivityLabel = Instance.new("TextLabel")
+
+sensitivityLabel.Name = "SensitivityLabel"
+sensitivityLabel.Size = UDim2.new(0, 250, 0, 40)
+sensitivityLabel.Position = UDim2.new(0, 20, 1, -125)
+
+sensitivityLabel.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+sensitivityLabel.BackgroundTransparency = 0.1
+
+sensitivityLabel.TextColor3 = Color3.new(1, 1, 1)
+sensitivityLabel.TextScaled = true
+sensitivityLabel.Font = Enum.Font.GothamBold
+
+sensitivityLabel.Text = "Độ nhạy: 0 / 20"
+
+sensitivityLabel.Parent = screenGui
+
+local labelCorner = Instance.new("UICorner")
+labelCorner.CornerRadius = UDim.new(0, 10)
+labelCorner.Parent = sensitivityLabel
+
+---------------
