@@ -1,0 +1,102 @@
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+-- Chờ giao diện mặc định của Roblox xuất hiện
+local playerModule = playerGui:WaitForChild("TouchGui", 10)
+
+if not playerModule then
+	warn("Không tìm thấy TouchGui. Hãy bật giao diện cảm ứng của Roblox.")
+	return
+end
+
+local jumpButton = playerModule:WaitForChild("TouchControlFrame")
+	:WaitForChild("JumpButton")
+
+-- Trạng thái khóa
+local locked = false
+
+-- Tạo nút khóa
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "JumpButtonController"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = playerGui
+
+local lockButton = Instance.new("TextButton")
+lockButton.Name = "LockButton"
+lockButton.Size = UDim2.new(0, 130, 0, 45)
+lockButton.Position = UDim2.new(0, 20, 1, -65)
+lockButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+lockButton.BackgroundTransparency = 0.15
+lockButton.TextColor3 = Color3.new(1, 1, 1)
+lockButton.TextScaled = true
+lockButton.Font = Enum.Font.GothamBold
+lockButton.Text = "🔓 MỞ KHÓA"
+lockButton.Parent = screenGui
+
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 10)
+corner.Parent = lockButton
+
+-- Cho phép kéo Jump
+local dragging = false
+local dragStart
+local startPosition
+
+local function updateJumpPosition(input)
+	local delta = input.Position - dragStart
+
+	jumpButton.Position = UDim2.new(
+		startPosition.X.Scale,
+		startPosition.X.Offset + delta.X,
+		startPosition.Y.Scale,
+		startPosition.Y.Offset + delta.Y
+	)
+end
+
+jumpButton.InputBegan:Connect(function(input)
+	if locked then
+		return
+	end
+
+	if input.UserInputType == Enum.UserInputType.MouseButton1
+		or input.UserInputType == Enum.UserInputType.Touch then
+
+		dragging = true
+		dragStart = input.Position
+		startPosition = jumpButton.Position
+	end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+	if dragging and not locked then
+		if input.UserInputType == Enum.UserInputType.MouseMovement
+			or input.UserInputType == Enum.UserInputType.Touch then
+
+			updateJumpPosition(input)
+		end
+	end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1
+		or input.UserInputType == Enum.UserInputType.Touch then
+
+		dragging = false
+	end
+end)
+
+-- Nút khóa / mở khóa
+lockButton.Activated:Connect(function()
+	locked = not locked
+
+	if locked then
+		lockButton.Text = "🔒 ĐÃ KHÓA"
+		lockButton.BackgroundColor3 = Color3.fromRGB(170, 50, 50)
+	else
+		lockButton.Text = "🔓 MỞ KHÓA"
+		lockButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+	end
+end)
