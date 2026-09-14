@@ -1,0 +1,277 @@
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+-- Xóa GUI cũ nếu có
+local old = playerGui:FindFirstChild("EightDirectionControl")
+if old then
+	old:Destroy()
+end
+
+-- GUI
+local gui = Instance.new("ScreenGui")
+gui.Name = "EightDirectionControl"
+gui.ResetOnSpawn = false
+gui.IgnoreGuiInset = true
+gui.Parent = playerGui
+
+-- Cụm nút
+local frame = Instance.new("Frame")
+frame.Size = UDim2.fromOffset(180, 180)
+frame.Position = UDim2.new(0, 25, 1, -210)
+frame.BackgroundTransparency = 1
+frame.Parent = gui
+
+-- Khóa
+local lock = Instance.new("TextButton")
+lock.Size = UDim2.fromOffset(38, 38)
+lock.Position = UDim2.fromOffset(5, 5)
+lock.Text = "🔓"
+lock.TextScaled = true
+lock.BackgroundTransparency = 0.2
+lock.Parent = gui
+
+local unlocked = true
+
+-- Các hướng
+local directions = {
+	W  = Vector2.new(0, -1),
+	WD = Vector2.new(1, -1),
+	D  = Vector2.new(1, 0),
+	DS = Vector2.new(1, 1),
+	S  = Vector2.new(0, 1),
+	SA = Vector2.new(-1, 1),
+	A  = Vector2.new(-1, 0),
+	WA = Vector2.new(-1, -1)
+}
+
+-- Vị trí 8 nút
+local positions = {
+	W  = UDim2.fromOffset(60, 0),
+	WD = UDim2.fromOffset(120, 0),
+	D  = UDim2.fromOffset(120, 60),
+	DS = UDim2.fromOffset(120, 120),
+	S  = UDim2.fromOffset(60, 120),
+	SA = UDim2.fromOffset(0, 120),
+	A  = UDim2.fromOffset(0, 60),
+	WA = UDim2.fromOffset(0, 0)
+}
+
+local buttons = {}
+local held = {}
+
+-- Tạo nút
+for name, direction in pairs(directions) do
+	local button = Instance.new("TextButton")
+
+	button.Name = name
+	button.Size = UDim2.fromOffset(58, 58)
+	button.Position = positions[name]
+
+	button.Text = name
+	button.TextScaled = true
+	button.BackgroundTransparency = 0.25
+	button.AutoButtonColor = false
+
+	button.Parent = frame
+
+	buttons[name] = button
+	held[name] = false
+end
+
+-- Lấy hướng hiện tại
+local function getDirection()
+	local result = Vector2.zero
+
+	for name, active in pairs(held) do
+		if active then
+			result += directions[name]
+		end
+	end
+
+	if result.Magnitude > 0 then
+		result = result.Unit
+	end
+
+	return result
+end
+
+-- Điều khiển nhân vật
+local humanoid
+
+local function setupCharacter(character)
+	humanoid = character:WaitForChild("Humanoid")
+end
+
+if player.Character then
+	setupCharacter(player.Character)
+end
+
+player.CharacterAdded:Connect(setupCharacter)
+
+-- Cập nhật chuyển động liên tục
+RunService.RenderStepped:Connect(function()
+	if humanoid and humanoid.Health > 0 then
+		local direction = getDirection()
+
+		if direction.Magnitude > 0 then
+			local camera = workspace.CurrentCamera
+
+			local forward = Vector3.new(
+				camera.CFrame.LookVector.X,
+				0,
+				camera.CFrame.LookVector.Z
+			)
+
+			local right = Vector3.new(
+				camera.CFrame.RightVector.X,
+				0,
+				camera.CFrame.RightVector.Z
+			)
+
+			if forward.Magnitude > 0 then
+				forward = forward.Unit
+			end
+
+			if right.Magnitude > 0 then
+				right = right.Unit
+			end
+
+			local moveDirection =
+				right * direction.X +
+				forward * -direction.Y
+
+			humanoid:Move(moveDirection, false)
+		else
+			humanoid:Move(Vector3.zero, false)
+		end
+	end
+end)
+
+-- Kiểm tra ngón tay đang nằm trên nút nào
+local function checkTouchPosition(position)
+	for name, button in pairs(buttons) do
+		local pos = button.AbsolutePosition
+		local size = button.AbsoluteSize
+
+		if position.X >= pos.X
+			and position.X <= pos.X + size.X
+			and position.Y >= pos.Y
+			and position.Y <= pos.Y + size.Y then
+
+			return name
+		end
+	end
+
+	return nil
+end
+
+-- Vuốt giữa các nút
+local activeTouch
+
+UserInputService.TouchStarted:Connect(function(touch)
+	if not unlocked then
+		return
+	end
+
+	local name = checkTouchPosition(touch.Position)
+
+	if name then
+		activeTouch = touch
+		held[name] = true
+	end
+end)
+
+UserInputService.TouchMoved:Connect(function(touch)
+	if touch ~= activeTouch or not unlocked then
+		return
+	end
+
+	-- Tắt hướng cũ
+	for name in pairs(held) do
+		held[name] = false
+	end
+
+	-- Bật hướng mới
+	local name = checkTouchPosition(touch.Position)
+
+	if name then
+		held[name] = true
+	end
+end)
+
+UserInputService.TouchEnded:Connect(function(touch)
+	if touch ~= activeTouch then
+		return
+	end
+
+	for name in pairs(held) do
+		held[name] = false
+	end
+
+	activeTouch = nil
+end)
+
+-- Khóa / mở khóa
+lock.Activated:Connect(function()
+	unlocked = not unlocked
+
+	if unlocked then
+		lock.Text = "🔓"
+	else
+		lock.Text = "🔒"
+
+		for name in pairs(held) do
+			held[name] = false
+		end
+	end
+end)
+
+-- Kéo cụm 8 nút
+local dragging = false
+local dragStart
+local frameStart
+
+frame.InputBegan:Connect(function(input)
+	if not unlocked then
+		return
+	end
+
+	if input.UserInputType == Enum.UserInputType.Touch
+		or input.UserInputType == Enum.UserInputType.MouseButton1 then
+
+		dragging = true
+		dragStart = input.Position
+		frameStart = frame.Position
+	end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+	if not dragging or not unlocked then
+		return
+	end
+
+	if input.UserInputType == Enum.UserInputType.Touch
+		or input.UserInputType == Enum.UserInputType.MouseMovement then
+
+		local delta = input.Position - dragStart
+
+		frame.Position = UDim2.new(
+			frameStart.X.Scale,
+			frameStart.X.Offset + delta.X,
+			frameStart.Y.Scale,
+			frameStart.Y.Offset + delta.Y
+		)
+	end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.Touch
+		or input.UserInputType == Enum.UserInputType.MouseButton1 then
+
+		dragging = false
+	end
+end)
