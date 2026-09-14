@@ -1,0 +1,98 @@
+local Players = game:GetService("Players")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+-- Tạo nút khóa
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "JumpControl"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = playerGui
+
+local lockButton = Instance.new("TextButton")
+lockButton.Size = UDim2.new(0, 40, 0, 40)
+lockButton.Position = UDim2.new(0, 10, 0, 10)
+lockButton.Text = "🔓"
+lockButton.TextScaled = true
+lockButton.BackgroundTransparency = 0.25
+lockButton.Parent = screenGui
+
+local unlocked = true
+local jumpButton
+
+local function findJumpButton()
+	local touchGui = playerGui:FindFirstChild("TouchGui")
+	if not touchGui then return end
+
+	local frame = touchGui:FindFirstChild("TouchControlFrame")
+	if not frame then return end
+
+	jumpButton = frame:FindFirstChild("JumpButton")
+end
+
+findJumpButton()
+
+-- Kéo nút Jump
+local dragging = false
+local dragStart
+local startPos
+
+local UserInputService = game:GetService("UserInputService")
+
+local function updateDrag(input)
+	if not unlocked or not jumpButton then return end
+
+	local delta = input.Position - dragStart
+	jumpButton.Position = UDim2.new(
+		startPos.X.Scale,
+		startPos.X.Offset + delta.X,
+		startPos.Y.Scale,
+		startPos.Y.Offset + delta.Y
+	)
+end
+
+task.wait(1)
+findJumpButton()
+
+if jumpButton then
+	jumpButton.InputBegan:Connect(function(input)
+		if not unlocked then return end
+
+		if input.UserInputType == Enum.UserInputType.Touch
+			or input.UserInputType == Enum.UserInputType.MouseButton1 then
+
+			dragging = true
+			dragStart = input.Position
+			startPos = jumpButton.Position
+		end
+	end)
+
+	jumpButton.InputChanged:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.Touch
+			or input.UserInputType == Enum.UserInputType.MouseMovement then
+
+			if dragging then
+				updateDrag(input)
+			end
+		end
+	end)
+end
+
+UserInputService.InputEnded:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.Touch
+		or input.UserInputType == Enum.UserInputType.MouseButton1 then
+
+		dragging = false
+	end
+end)
+
+-- Khóa / mở khóa
+lockButton.Activated:Connect(function()
+	unlocked = not unlocked
+
+	if unlocked then
+		lockButton.Text = "🔓"
+	else
+		lockButton.Text = "🔒"
+	end
+end)
