@@ -1,0 +1,115 @@
+-- Jump Button Controller
+-- Đặt LocalScript vào StarterPlayer > StarterPlayerScripts
+
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+-- =========================
+-- CÀI ĐẶT
+-- =========================
+
+local sensitivity = 5 -- Độ nhạy từ 1 -> 10
+local movingJump = false
+local dragStart
+local startPosition
+
+-- =========================
+-- TÌM NÚT JUMP
+-- =========================
+
+local function getJumpButton()
+	local touchGui = playerGui:FindFirstChild("TouchGui")
+
+	if not touchGui then
+		return nil
+	end
+
+	local touchControlFrame = touchGui:FindFirstChild("TouchControlFrame")
+
+	if not touchControlFrame then
+		return nil
+	end
+
+	local jumpButton = touchControlFrame:FindFirstChild("JumpButton")
+
+	return jumpButton
+end
+
+-- =========================
+-- CẬP NHẬT ĐỘ NHẠY
+-- =========================
+
+local function setSensitivity(value)
+	sensitivity = math.clamp(value, 1, 10)
+end
+
+-- Ví dụ:
+-- setSensitivity(1)  = chậm nhất
+-- setSensitivity(5)  = mặc định
+-- setSensitivity(10) = nhanh nhất
+
+
+-- =========================
+-- DI CHUYỂN NÚT JUMP
+-- =========================
+
+local function setupJumpButton()
+	local jumpButton
+
+	repeat
+		jumpButton = getJumpButton()
+		task.wait(0.5)
+	until jumpButton
+
+	-- Cho phép kéo nút Jump
+	jumpButton.Active = true
+
+	jumpButton.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.Touch
+			or input.UserInputType == Enum.UserInputType.MouseButton1 then
+
+			movingJump = true
+			dragStart = input.Position
+			startPosition = jumpButton.Position
+		end
+	end)
+
+	UserInputService.InputChanged:Connect(function(input)
+		if not movingJump then
+			return
+		end
+
+		if input.UserInputType ~= Enum.UserInputType.Touch
+			and input.UserInputType ~= Enum.UserInputType.MouseMovement then
+			return
+		end
+
+		local delta = input.Position - dragStart
+
+		-- Độ nhạy 1 -> 10
+		local speed = sensitivity / 5
+
+		local newX = startPosition.X.Offset + delta.X * speed
+		local newY = startPosition.Y.Offset + delta.Y * speed
+
+		jumpButton.Position = UDim2.new(
+			startPosition.X.Scale,
+			newX,
+			startPosition.Y.Scale,
+			newY
+		)
+	end)
+
+	UserInputService.InputEnded:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.Touch
+			or input.UserInputType == Enum.UserInputType.MouseButton1 then
+
+			movingJump = false
+		end
+	end)
+end
+
+setupJumpButton()
