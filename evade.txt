@@ -1,0 +1,370 @@
+lua
+--// Mobile Control Settings
+--// GUI đen - kéo được - chỉnh độ nhạy - di chuyển Jump + Lock
+
+local Players = game:GetService("Players")
+local UIS = game:GetService("UserInputService")
+
+local Player = Players.LocalPlayer
+local PlayerGui = Player:WaitForChild("PlayerGui")
+
+--==================================================
+-- CONFIG
+--==================================================
+
+local Sensitivity = 5
+local Locked = false
+
+--==================================================
+-- SCREEN GUI
+--==================================================
+
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "MobileControlSettings"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.IgnoreGuiInset = true
+ScreenGui.Parent = PlayerGui
+
+--==================================================
+-- OPEN / CLOSE BUTTON
+--==================================================
+
+local OpenButton = Instance.new("TextButton")
+OpenButton.Name = "OpenButton"
+OpenButton.Size = UDim2.fromOffset(42, 42)
+OpenButton.Position = UDim2.new(0, 15, 0.5, -21)
+OpenButton.BackgroundColor3 = Color3.fromRGB(20,20,20)
+OpenButton.Text = "⚙"
+OpenButton.TextColor3 = Color3.new(1,1,1)
+OpenButton.TextSize = 22
+OpenButton.BorderSizePixel = 0
+OpenButton.Parent = ScreenGui
+
+local OpenCorner = Instance.new("UICorner")
+OpenCorner.CornerRadius = UDim.new(0,10)
+OpenCorner.Parent = OpenButton
+
+--==================================================
+-- MAIN WINDOW
+--==================================================
+
+local Main = Instance.new("Frame")
+Main.Name = "Main"
+Main.Size = UDim2.fromOffset(300, 260)
+Main.Position = UDim2.new(0.5, -150, 0.5, -130)
+Main.BackgroundColor3 = Color3.fromRGB(15,15,15)
+Main.BorderSizePixel = 0
+Main.Visible = false
+Main.Parent = ScreenGui
+
+local MainCorner = Instance.new("UICorner")
+MainCorner.CornerRadius = UDim.new(0,12)
+MainCorner.Parent = Main
+
+--==================================================
+-- TITLE BAR
+--==================================================
+
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, -50, 0, 45)
+Title.Position = UDim2.fromOffset(12,0)
+Title.BackgroundTransparency = 1
+Title.Text = "Mobile Settings"
+Title.TextColor3 = Color3.new(1,1,1)
+Title.TextSize = 18
+Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.Font = Enum.Font.GothamBold
+Title.Parent = Main
+
+local Close = Instance.new("TextButton")
+Close.Size = UDim2.fromOffset(35,35)
+Close.Position = UDim2.new(1,-42,0,5)
+Close.BackgroundTransparency = 1
+Close.Text = "×"
+Close.TextColor3 = Color3.new(1,1,1)
+Close.TextSize = 25
+Close.Parent = Main
+
+--==================================================
+-- TAB MAIN
+--==================================================
+
+local TabMain = Instance.new("TextButton")
+TabMain.Size = UDim2.fromOffset(75,32)
+TabMain.Position = UDim2.fromOffset(10,48)
+TabMain.BackgroundColor3 = Color3.fromRGB(35,35,35)
+TabMain.Text = "Main"
+TabMain.TextColor3 = Color3.new(1,1,1)
+TabMain.TextSize = 14
+TabMain.BorderSizePixel = 0
+TabMain.Parent = Main
+
+local TabCorner = Instance.new("UICorner")
+TabCorner.CornerRadius = UDim.new(0,7)
+TabCorner.Parent = TabMain
+
+--==================================================
+-- SENSITIVITY
+--==================================================
+
+local SensLabel = Instance.new("TextLabel")
+SensLabel.Size = UDim2.new(1,-30,0,30)
+SensLabel.Position = UDim2.fromOffset(15,90)
+SensLabel.BackgroundTransparency = 1
+SensLabel.Text = "Độ nhạy: 5"
+SensLabel.TextColor3 = Color3.new(1,1,1)
+SensLabel.TextSize = 15
+SensLabel.TextXAlignment = Enum.TextXAlignment.Left
+SensLabel.Parent = Main
+
+local Minus = Instance.new("TextButton")
+Minus.Size = UDim2.fromOffset(35,30)
+Minus.Position = UDim2.fromOffset(15,125)
+Minus.BackgroundColor3 = Color3.fromRGB(35,35,35)
+Minus.Text = "-"
+Minus.TextColor3 = Color3.new(1,1,1)
+Minus.TextSize = 20
+Minus.BorderSizePixel = 0
+Minus.Parent = Main
+
+local Plus = Instance.new("TextButton")
+Plus.Size = UDim2.fromOffset(35,30)
+Plus.Position = UDim2.fromOffset(250,125)
+Plus.BackgroundColor3 = Color3.fromRGB(35,35,35)
+Plus.Text = "+"
+Plus.TextColor3 = Color3.new(1,1,1)
+Plus.TextSize = 20
+Plus.BorderSizePixel = 0
+Plus.Parent = Main
+
+local SensValue = Instance.new("TextLabel")
+SensValue.Size = UDim2.fromOffset(170,30)
+SensValue.Position = UDim2.fromOffset(60,125)
+SensValue.BackgroundColor3 = Color3.fromRGB(25,25,25)
+SensValue.Text = "5"
+SensValue.TextColor3 = Color3.new(1,1,1)
+SensValue.TextSize = 15
+SensValue.Parent = Main
+
+local function UpdateSensitivity()
+	SensLabel.Text = "Độ nhạy: "..Sensitivity
+	SensValue.Text = tostring(Sensitivity)
+end
+
+Minus.MouseButton1Click:Connect(function()
+	if Sensitivity > 1 then
+		Sensitivity -= 1
+		UpdateSensitivity()
+	end
+end)
+
+Plus.MouseButton1Click:Connect(function()
+	if Sensitivity < 10 then
+		Sensitivity += 1
+		UpdateSensitivity()
+	end
+end)
+
+--==================================================
+-- MOVE JUMP BUTTON
+--==================================================
+
+local JumpMove = Instance.new("TextButton")
+JumpMove.Size = UDim2.fromOffset(260,35)
+JumpMove.Position = UDim2.fromOffset(20,170)
+JumpMove.BackgroundColor3 = Color3.fromRGB(35,35,35)
+JumpMove.Text = "Di chuyển nút nhảy"
+JumpMove.TextColor3 = Color3.new(1,1,1)
+JumpMove.TextSize = 14
+JumpMove.BorderSizePixel = 0
+JumpMove.Parent = Main
+
+local JumpCorner = Instance.new("UICorner")
+JumpCorner.CornerRadius = UDim.new(0,7)
+JumpCorner.Parent = JumpMove
+
+--==================================================
+-- LOCK BUTTON
+--==================================================
+
+local LockButton = Instance.new("TextButton")
+LockButton.Size = UDim2.fromOffset(260,35)
+LockButton.Position = UDim2.fromOffset(20,215)
+LockButton.BackgroundColor3 = Color3.fromRGB(35,35,35)
+LockButton.Text = "🔓 Đang mở khóa"
+LockButton.TextColor3 = Color3.new(1,1,1)
+LockButton.TextSize = 14
+LockButton.BorderSizePixel = 0
+LockButton.Parent = Main
+
+local LockCorner = Instance.new("UICorner")
+LockCorner.CornerRadius = UDim.new(0,7)
+LockCorner.Parent = LockButton
+
+--==================================================
+-- OPEN / CLOSE
+--==================================================
+
+OpenButton.MouseButton1Click:Connect(function()
+	Main.Visible = not Main.Visible
+end)
+
+Close.MouseButton1Click:Connect(function()
+	Main.Visible = false
+end)
+
+--==================================================
+-- DRAG MAIN GUI
+--==================================================
+
+local dragging = false
+local dragStart
+local startPos
+
+Title.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.Touch
+	or input.UserInputType == Enum.UserInputType.MouseButton1 then
+
+		dragging = true
+		dragStart = input.Position
+		startPos = Main.Position
+	end
+end)
+
+UIS.InputChanged:Connect(function(input)
+	if dragging then
+		if input.UserInputType == Enum.UserInputType.Touch
+		or input.UserInputType == Enum.UserInputType.MouseMovement then
+
+			local delta = input.Position - dragStart
+
+			Main.Position = UDim2.new(
+				startPos.X.Scale,
+				startPos.X.Offset + delta.X,
+				startPos.Y.Scale,
+				startPos.Y.Offset + delta.Y
+			)
+		end
+	end
+end)
+
+UIS.InputEnded:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.Touch
+	or input.UserInputType == Enum.UserInputType.MouseButton1 then
+		dragging = false
+	end
+end)
+
+--==================================================
+-- FIND ROBLOX MOBILE JUMP BUTTON
+--==================================================
+
+local function GetJumpButton()
+	local TouchGui = PlayerGui:FindFirstChild("TouchGui")
+
+	if not TouchGui then
+		return nil
+	end
+
+	local TouchControlFrame = TouchGui:FindFirstChild("TouchControlFrame")
+
+	if not TouchControlFrame then
+		return nil
+	end
+
+	local JumpButton = TouchControlFrame:FindFirstChild("JumpButton")
+
+	return JumpButton
+end
+
+--==================================================
+-- MOVE JUMP BUTTON
+--==================================================
+
+local MovingJump = false
+local JumpStart
+local JumpPosition
+
+JumpMove.MouseButton1Click:Connect(function()
+
+	local JumpButton = GetJumpButton()
+
+	if not JumpButton then
+		SensLabel.Text = "Không tìm thấy nút nhảy"
+		return
+	end
+
+	MovingJump = true
+
+	JumpPosition = JumpButton.Position
+
+	SensLabel.Text = "Kéo nút nhảy trên màn hình"
+
+end)
+
+UIS.InputChanged:Connect(function(input)
+
+	if not MovingJump or Locked then
+		return
+	end
+
+	if input.UserInputType == Enum.UserInputType.Touch
+	or input.UserInputType == Enum.UserInputType.MouseMovement then
+
+		local JumpButton = GetJumpButton()
+
+		if JumpButton then
+
+			local mousePos = input.Position
+
+			local screen = workspace.CurrentCamera.ViewportSize
+
+			local x = mousePos.X / screen.X
+			local y = mousePos.Y / screen.Y
+
+			JumpButton.Position = UDim2.new(
+				x,
+				-JumpButton.AbsoluteSize.X / 2,
+				y,
+				-JumpButton.AbsoluteSize.Y / 2
+			)
+
+		end
+	end
+end)
+
+UIS.InputEnded:Connect(function(input)
+
+	if input.UserInputType == Enum.UserInputType.Touch
+	or input.UserInputType == Enum.UserInputType.MouseButton1 then
+
+		if MovingJump then
+			MovingJump = false
+			SensLabel.Text = "Độ nhạy: "..Sensitivity
+		end
+
+	end
+
+end)
+
+--==================================================
+-- LOCK
+--==================================================
+
+LockButton.MouseButton1Click:Connect(function()
+
+	Locked = not Locked
+
+	if Locked then
+		LockButton.Text = "🔒 Đã khóa"
+	else
+		LockButton.Text = "🔓 Đang mở khóa"
+	end
+
+end)
+
+--==================================================
+-- START
+--==================================================
+
+UpdateSensitivity()
