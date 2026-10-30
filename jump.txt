@@ -1,102 +1,572 @@
+-- JumpSettingsClient (LocalScript)
+-- Place: StarterPlayer > StarterPlayerScripts
+
 local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
--- Chờ giao diện mặc định của Roblox xuất hiện
-local playerModule = playerGui:WaitForChild("TouchGui", 10)
+local REMOTE_NAME = "JumpSettingsEvent"
+local RemoteEvent = ReplicatedStorage:WaitForChild(REMOTE_NAME, 10)
 
-if not playerModule then
-	warn("Không tìm thấy TouchGui. Hãy bật giao diện cảm ứng của Roblox.")
-	return
+-- THEME COLORS
+local COLOR_BG = Color3.fromRGB(18,18,22)
+local COLOR_PANEL = Color3.fromRGB(30,30,36)
+local COLOR_ACCENT = Color3.fromRGB(110,20,30) -- maroon
+local COLOR_HIGHLIGHT = Color3.fromRGB(90,170,255)
+local COLOR_TEXT_DIM = Color3.fromRGB(150,150,160)
+
+-- ATTRIBUTE UTILS
+local function getAttr(name, default)
+	local ok, val = pcall(function() return player:GetAttribute(name) end)
+	if not ok or val == nil then
+		pcall(function() player:SetAttribute(name, default) end)
+		return default
+	end
+	return val
 end
 
-local jumpButton = playerModule:WaitForChild("TouchControlFrame")
-	:WaitForChild("JumpButton")
-
--- Trạng thái khóa
-local locked = false
-
--- Tạo nút khóa
-local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "JumpButtonController"
-screenGui.ResetOnSpawn = false
-screenGui.Parent = playerGui
-
-local lockButton = Instance.new("TextButton")
-lockButton.Name = "LockButton"
-lockButton.Size = UDim2.new(0, 130, 0, 45)
-lockButton.Position = UDim2.new(0, 20, 1, -65)
-lockButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-lockButton.BackgroundTransparency = 0.15
-lockButton.TextColor3 = Color3.new(1, 1, 1)
-lockButton.TextScaled = true
-lockButton.Font = Enum.Font.GothamBold
-lockButton.Text = "🔓 MỞ KHÓA"
-lockButton.Parent = screenGui
-
-local corner = Instance.new("UICorner")
-corner.CornerRadius = UDim.new(0, 10)
-corner.Parent = lockButton
-
--- Cho phép kéo Jump
-local dragging = false
-local dragStart
-local startPosition
-
-local function updateJumpPosition(input)
-	local delta = input.Position - dragStart
-
-	jumpButton.Position = UDim2.new(
-		startPosition.X.Scale,
-		startPosition.X.Offset + delta.X,
-		startPosition.Y.Scale,
-		startPosition.Y.Offset + delta.Y
-	)
+local function setAttr(name, value)
+	pcall(function() player:SetAttribute(name, value) end)
 end
 
-jumpButton.InputBegan:Connect(function(input)
-	if locked then
-		return
-	end
+-- SOUND FEEDBACK
+local function playClick()
+	local s = Instance.new("Sound")
+	s.SoundId = "rbxassetid://87437544236708"
+	s.Volume = 0.22
+	s.Parent = game:GetService("SoundService")
+	s:Play()
+	game:GetService("Debris"):AddItem(s, 1)
+end
 
-	if input.UserInputType == Enum.UserInputType.MouseButton1
-		or input.UserInputType == Enum.UserInputType.Touch then
+-- UI ROOT
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "JumpSettingsGui"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.IgnoreGuiInset = true
+ScreenGui.DisplayOrder = 1000
+ScreenGui.Parent = playerGui
 
-		dragging = true
-		dragStart = input.Position
-		startPosition = jumpButton.Position
-	end
-end)
+local PANEL_W, PANEL_H = 300, 320
 
-UserInputService.InputChanged:Connect(function(input)
-	if dragging and not locked then
-		if input.UserInputType == Enum.UserInputType.MouseMovement
-			or input.UserInputType == Enum.UserInputType.Touch then
+local Frame = Instance.new("Frame")
+Frame.Name = "MainFrame"
+Frame.Size = UDim2.new(0, PANEL_W, 0, PANEL_H)
+Frame.Position = UDim2.new(0.5, -PANEL_W/2, 1, 340) -- hidden initially
+Frame.BackgroundColor3 = COLOR_PANEL
+Frame.BorderSizePixel = 0
+Frame.Parent = ScreenGui
 
-			updateJumpPosition(input)
+Instance.new("UICorner", Frame).CornerRadius = UDim.new(0, 12)
+local frameStroke = Instance.new("UIStroke", Frame)
+frameStroke.Color = Color3.fromRGB(40,40,46)
+frameStroke.Thickness = 1
+frameStroke.Transparency = 0.35
+
+-- TITLE BAR
+local TitleBar = Instance.new("Frame")
+TitleBar.Size = UDim2.new(1, 0, 0, 48)
+TitleBar.Position = UDim2.new(0, 0, 0, 0)
+TitleBar.BackgroundColor3 = COLOR_BG
+TitleBar.BorderSizePixel = 0
+TitleBar.Parent = Frame
+Instance.new("UICorner", TitleBar).CornerRadius = UDim.new(0, 10)
+
+local TitleLabel = Instance.new("TextLabel")
+TitleLabel.Size = UDim2.new(1, -80, 1, 0)
+TitleLabel.Position = UDim2.new(0, 16, 0, 0)
+TitleLabel.BackgroundTransparency = 1
+TitleLabel.Text = "⚙️  Jump Button Settings"
+TitleLabel.Font = Enum.Font.GothamBold
+TitleLabel.TextSize = 15
+TitleLabel.TextColor3 = Color3.new(1,1,1)
+TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+TitleLabel.Parent = TitleBar
+
+local CloseBtn = Instance.new("TextButton")
+CloseBtn.Size = UDim2.new(0, 36, 0, 28)
+CloseBtn.Position = UDim2.new(1, -54, 0.5, -14)
+CloseBtn.BackgroundColor3 = COLOR_ACCENT
+CloseBtn.BorderSizePixel = 0
+CloseBtn.Text = "❌"
+CloseBtn.Font = Enum.Font.GothamBold
+CloseBtn.TextSize = 16
+CloseBtn.TextColor3 = Color3.new(1,1,1)
+CloseBtn.Parent = TitleBar
+Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(1, 0)
+
+-- CONTENT FRAME
+local Content = Instance.new("Frame")
+Content.Size = UDim2.new(1, -28, 1, -92)
+Content.Position = UDim2.new(0, 14, 0, 56)
+Content.BackgroundTransparency = 1
+Content.Parent = Frame
+
+-- SLIDER FACTORY
+local sliders = {}
+local UPDATE_THROTTLE = 0.05
+
+local function createSlider(parent, labelText, desc, yPos, minVal, maxVal, attrName, defaultVal)
+	local container = Instance.new("Frame")
+	container.Size = UDim2.new(1, 0, 0, 64)
+	container.Position = UDim2.new(0, 0, 0, yPos)
+	container.BackgroundTransparency = 1
+	container.Parent = parent
+
+	local current = getAttr(attrName, defaultVal or minVal)
+	local minv, maxv = minVal, maxVal
+
+	local label = Instance.new("TextLabel")
+	label.Size = UDim2.new(1, -64, 0, 18)
+	label.Position = UDim2.new(0, 0, 0, 0)
+	label.BackgroundTransparency = 1
+	label.Text = labelText
+	label.Font = Enum.Font.GothamBold
+	label.TextSize = 13
+	label.TextColor3 = Color3.new(1,1,1)
+	label.TextXAlignment = Enum.TextXAlignment.Left
+	label.Parent = container
+
+	local valueLabel = Instance.new("TextLabel")
+	valueLabel.Size = UDim2.new(0, 56, 0, 18)
+	valueLabel.Position = UDim2.new(1, -56, 0, 0)
+	valueLabel.BackgroundTransparency = 1
+	valueLabel.Text = tostring(math.floor(current))
+	valueLabel.Font = Enum.Font.GothamBold
+	valueLabel.TextSize = 13
+	valueLabel.TextColor3 = COLOR_HIGHLIGHT
+	valueLabel.TextXAlignment = Enum.TextXAlignment.Right
+	valueLabel.Parent = container
+
+	local descLabel = Instance.new("TextLabel")
+	descLabel.Size = UDim2.new(1, 0, 0, 14)
+	descLabel.Position = UDim2.new(0, 0, 0, 18)
+	descLabel.BackgroundTransparency = 1
+	descLabel.Text = desc
+	descLabel.Font = Enum.Font.Gotham
+	descLabel.TextSize = 10
+	descLabel.TextColor3 = COLOR_TEXT_DIM
+	descLabel.TextXAlignment = Enum.TextXAlignment.Left
+	descLabel.Parent = container
+
+	local track = Instance.new("Frame")
+	track.Size = UDim2.new(1, 0, 0, 8)
+	track.Position = UDim2.new(0, 0, 0, 36)
+	track.BackgroundColor3 = Color3.fromRGB(42,42,50)
+	track.BorderSizePixel = 0
+	track.Parent = container
+	Instance.new("UICorner", track).CornerRadius = UDim.new(1, 0)
+
+	local rel = 0
+	if maxv > minv then rel = (current - minv) / (maxv - minv) end
+	
+	local fill = Instance.new("Frame")
+	fill.Size = UDim2.new(rel,0,1,0)
+	fill.BackgroundColor3 = COLOR_HIGHLIGHT
+	fill.BorderSizePixel = 0
+	fill.Parent = track
+	Instance.new("UICorner", fill).CornerRadius = UDim.new(1,0)
+
+	local thumb = Instance.new("Frame")
+	thumb.Size = UDim2.new(0,20,0,20)
+	thumb.Position = UDim2.new(rel, -10, 0.5, -10)
+	thumb.BackgroundColor3 = Color3.fromRGB(245,245,245)
+	thumb.BorderSizePixel = 0
+	thumb.Parent = track
+	Instance.new("UICorner", thumb).CornerRadius = UDim.new(1,0)
+	local tStroke = Instance.new("UIStroke", thumb)
+	tStroke.Color = COLOR_HIGHLIGHT
+	tStroke.Thickness = 3
+
+	local hit = Instance.new("TextButton")
+	hit.Size = UDim2.new(1,24,1,24)
+	hit.Position = UDim2.new(0,-12,0,-12)
+	hit.BackgroundTransparency = 1
+	hit.Text = ""
+	hit.Parent = track
+
+	local dragging = false
+	local dragConn
+	local lastUpdate = 0
+
+	local function updateFromPos(x)
+		local trackPos = track.AbsolutePosition.X
+		local trackSize = track.AbsoluteSize.X
+		local r = math.clamp((x - trackPos) / trackSize, 0, 1)
+		local newVal = math.floor(minv + r * (maxv - minv))
+		current = newVal
+		fill:TweenSize(UDim2.new(r,0,1,0), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.12, true)
+		thumb:TweenPosition(UDim2.new(r, -10, 0.5, -10), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.12, true)
+		valueLabel.Text = tostring(newVal)
+		local now = tick()
+		if now - lastUpdate >= UPDATE_THROTTLE then
+			setAttr(attrName, newVal)
+			if sliders[attrName] and sliders[attrName].OnChange then 
+				sliders[attrName].OnChange(newVal) 
+			end
+			lastUpdate = now
 		end
 	end
-end)
 
-UserInputService.InputEnded:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseButton1
-		or input.UserInputType == Enum.UserInputType.Touch then
-
+	local function startDrag(input)
+		dragging = true
+		thumb:TweenSize(UDim2.new(0,24,0,24), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.12, true)
+		if dragConn then dragConn:Disconnect() end
+		dragConn = RunService.Heartbeat:Connect(function()
+			if dragging then
+				local mx
+				if input.UserInputType == Enum.UserInputType.Touch then
+					mx = input.Position.X
+				else
+					mx = UserInputService:GetMouseLocation().X
+				end
+				updateFromPos(mx)
+			end
+		end)
+	end
+	
+	local function stopDrag()
+		if not dragging then return end
 		dragging = false
+		thumb:TweenSize(UDim2.new(0,20,0,20), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.12, true)
+		thumb:TweenPosition(UDim2.new((current - minv)/(maxv-minv), -10, 0.5, -10), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.12, true)
+		setAttr(attrName, current)
+		if sliders[attrName] and sliders[attrName].OnChange then 
+			sliders[attrName].OnChange(current) 
+		end
+		if dragConn then dragConn:Disconnect() dragConn = nil end
 	end
+
+	hit.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or 
+		   input.UserInputType == Enum.UserInputType.Touch then
+			startDrag(input)
+		end
+	end)
+	
+	hit.InputEnded:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or 
+		   input.UserInputType == Enum.UserInputType.Touch then
+			stopDrag()
+		end
+	end)
+	
+	UserInputService.InputEnded:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or 
+		   input.UserInputType == Enum.UserInputType.Touch then
+			stopDrag()
+		end
+	end)
+
+	local entry = {}
+	function entry.SetValue(val)
+		current = math.clamp(val, minv, maxv)
+		local r = (current - minv) / math.max(1, (maxv - minv))
+		fill.Size = UDim2.new(r,0,1,0)
+		thumb.Position = UDim2.new(r, -10, 0.5, -10)
+		valueLabel.Text = tostring(math.floor(current))
+		setAttr(attrName, current)
+		if entry.OnChange then entry.OnChange(current) end
+	end
+	
+	function entry.SetRange(newMin, newMax)
+		minv, maxv = newMin, newMax
+		entry.SetValue(math.clamp(current, minv, maxv))
+	end
+	
+	sliders[attrName] = entry
+	return entry
+end
+
+-- SLIDERS
+local sizeSlider = createSlider(Content, "Button Size", "Skala tombol jump (100 = ukuran bawaan)", 0, 100, 250, "JumpSize", 100)
+local xSlider = createSlider(Content, "Horizontal Position", "Geser tombol ke kiri/kanan layar", 76, -400, 200, "JumpPosX", 0)
+local ySlider = createSlider(Content, "Vertical Position", "Geser tombol ke atas/bawah layar", 152, -400, 200, "JumpPosY", 0)
+
+-- BUTTONS (SAVE & RESET) - INSIDE PANEL 
+local buttonsFrame = Instance.new("Frame")
+buttonsFrame.Size = UDim2.new(1, 0, 0, 60)
+buttonsFrame.Position = UDim2.new(0, 0, 0, 218) -- raised from 232 to 218
+buttonsFrame.BackgroundTransparency = 1
+buttonsFrame.Parent = Content
+
+local ResetBtn = Instance.new("TextButton")
+ResetBtn.Size = UDim2.new(0.48, 0, 0, 44)
+ResetBtn.Position = UDim2.new(0, 0, 0, 0)
+ResetBtn.BackgroundColor3 = Color3.fromRGB(40,40,46)
+ResetBtn.BorderSizePixel = 0
+ResetBtn.Font = Enum.Font.GothamBold
+ResetBtn.Text = "♻️ Reset"
+ResetBtn.TextSize = 14
+ResetBtn.TextColor3 = Color3.new(1,1,1)
+ResetBtn.Parent = buttonsFrame
+Instance.new("UICorner", ResetBtn).CornerRadius = UDim.new(0,8)
+
+local SaveBtn = Instance.new("TextButton")
+SaveBtn.Size = UDim2.new(0.48, 0, 0, 44)
+SaveBtn.Position = UDim2.new(0.52, 0, 0, 0)
+SaveBtn.BackgroundColor3 = Color3.fromRGB(50,50,58)
+SaveBtn.BorderSizePixel = 0
+SaveBtn.Font = Enum.Font.GothamBold
+SaveBtn.Text = "💾 Save"
+SaveBtn.TextSize = 14
+SaveBtn.TextColor3 = Color3.new(1,1,1)
+SaveBtn.Parent = buttonsFrame
+Instance.new("UICorner", SaveBtn).CornerRadius = UDim.new(0,8)
+
+-- HOVER EFFECTS
+local function addHover(btn, normal, hover)
+	btn.MouseEnter:Connect(function() 
+		TweenService:Create(btn, TweenInfo.new(0.12), {BackgroundColor3 = hover}):Play() 
+	end)
+	btn.MouseLeave:Connect(function() 
+		TweenService:Create(btn, TweenInfo.new(0.12), {BackgroundColor3 = normal}):Play() 
+	end)
+end
+
+addHover(ResetBtn, ResetBtn.BackgroundColor3, Color3.fromRGB(55,55,60))
+addHover(SaveBtn, SaveBtn.BackgroundColor3, Color3.fromRGB(65,65,72))
+addHover(CloseBtn, COLOR_ACCENT, Color3.fromRGB(170,40,60))
+
+-- OPEN BUTTON (TOGGLE)
+local OpenBtn = Instance.new("TextButton")
+OpenBtn.Size = UDim2.new(0, 44, 0, 44)
+
+-- KALAU MAU PINDAHIN UBAH DISINI(TOMBOL BUKA)
+OpenBtn.Position = UDim2.new(0, 15, 0, 80)
+OpenBtn.BackgroundColor3 = Color3.fromRGB(38,38,44)
+OpenBtn.BorderSizePixel = 0
+OpenBtn.Text = "⚙️"
+OpenBtn.TextSize = 22
+OpenBtn.Font = Enum.Font.GothamBold
+OpenBtn.TextColor3 = Color3.new(1,1,1)
+OpenBtn.AutoButtonColor = false
+OpenBtn.Parent = ScreenGui
+Instance.new("UICorner", OpenBtn).CornerRadius = UDim.new(1, 0)
+addHover(OpenBtn, OpenBtn.BackgroundColor3, Color3.fromRGB(55,55,60))
+
+
+-- OPEN/CLOSE MENU LOGIC
+local menuOpen = false
+local function toggleMenu(show)
+	menuOpen = (show == nil) and (not menuOpen) or show
+	playClick()
+	local target = menuOpen 
+		and UDim2.new(0.5, -PANEL_W/2, 0.5, -PANEL_H/2) 
+		or UDim2.new(0.5, -PANEL_W/2, 1, 340)
+	TweenService:Create(Frame, TweenInfo.new(0.32, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = target}):Play()
+end
+
+OpenBtn.MouseButton1Click:Connect(function() toggleMenu() end)
+CloseBtn.MouseButton1Click:Connect(function() toggleMenu(false) end)
+
+
+-- CRITICAL: These must be initialized BEFORE applying any settings
+local DEFAULT_BUTTON_SIZE = nil
+local DEFAULT_BUTTON_POS = nil
+local touchGuiReady = false
+
+local function applySettings()
+	pcall(function()
+		local gui = playerGui:FindFirstChild("TouchGui")
+		if not gui then return end
+		local ctrl = gui:FindFirstChild("TouchControlFrame")
+		if not ctrl then return end
+		local btn = ctrl:FindFirstChild("JumpButton", true)
+		if not btn then return end
+
+		-- CRITICAL: Record default size and position on first detection
+		if not DEFAULT_BUTTON_SIZE then 
+			DEFAULT_BUTTON_SIZE = btn.Size 
+			touchGuiReady = true
+		end
+		if not DEFAULT_BUTTON_POS then 
+			DEFAULT_BUTTON_POS = btn.Position 
+		end
+
+		-- Read current attributes
+		local js = getAttr("JumpSize", 100)
+		local px = getAttr("JumpPosX", 0)
+		local py = getAttr("JumpPosY", 0)
+
+		-- Convert percentage to pixels using recorded default
+		local baseW = DEFAULT_BUTTON_SIZE.X.Offset
+		local baseH = DEFAULT_BUTTON_SIZE.Y.Offset
+		local w = math.floor(baseW * (js / 100))
+		local h = math.floor(baseH * (js / 100))
+
+		-- Apply size and position
+		btn.Size = UDim2.new(0, w, 0, h)
+		btn.Position = UDim2.new(
+			DEFAULT_BUTTON_POS.X.Scale, 
+			DEFAULT_BUTTON_POS.X.Offset + px, 
+			DEFAULT_BUTTON_POS.Y.Scale, 
+			DEFAULT_BUTTON_POS.Y.Offset + py
+		)
+	end)
+end
+
+sizeSlider.OnChange = applySettings
+xSlider.OnChange = applySettings
+ySlider.OnChange = applySettings
+
+local function waitForTouchGuiAndInit()
+	for i = 1, 10 do
+		local gui = playerGui:FindFirstChild("TouchGui")
+		if gui then
+			local ctrl = gui:FindFirstChild("TouchControlFrame")
+			if ctrl then
+				local btn = ctrl:FindFirstChild("JumpButton", true)
+				if btn then
+					-- Record defaults ONLY if not already set (prevents growing on respawn)
+					if not DEFAULT_BUTTON_SIZE then
+						DEFAULT_BUTTON_SIZE = btn.Size
+					end
+					if not DEFAULT_BUTTON_POS then
+						DEFAULT_BUTTON_POS = btn.Position
+					end
+					touchGuiReady = true
+					
+					-- Apply current settings
+					applySettings()
+					return true
+				end
+			end
+		end
+		task.wait(0.3)
+	end
+	warn("[JumpSettings] TouchGui not found after 10 attempts")
+	return false
+end
+
+-- Start initialization
+task.spawn(waitForTouchGuiAndInit)
+
+-- Re-initialize on TouchGui added
+playerGui.ChildAdded:Connect(function(c) 
+	if c.Name == "TouchGui" then 
+		task.defer(waitForTouchGuiAndInit) 
+	end 
 end)
 
--- Nút khóa / mở khóa
-lockButton.Activated:Connect(function()
-	locked = not locked
+-- Re-initialize on character respawn
+player.CharacterAdded:Connect(function() 
+	-- Don't reset defaults - keep them from first initialization
+	-- This prevents the button from growing on respawn
+	touchGuiReady = false
+	task.defer(function()
+		waitForTouchGuiAndInit()
+		-- Re-apply current settings after respawn
+		task.wait(0.2)
+		applySettings()
+	end)
+end)
 
-	if locked then
-		lockButton.Text = "🔒 ĐÃ KHÓA"
-		lockButton.BackgroundColor3 = Color3.fromRGB(170, 50, 50)
+SaveBtn.MouseButton1Click:Connect(function()
+	if not RemoteEvent then 
+		warn("[JumpSettings] RemoteEvent not found")
+		return 
+	end
+	
+	playClick()
+	local payload = {
+		action = "Save",
+		data = {
+			JumpSize = getAttr("JumpSize", 100),
+			JumpPosX = getAttr("JumpPosX", 0),
+			JumpPosY = getAttr("JumpPosY", 0),
+		}
+	}
+	RemoteEvent:FireServer(payload)
+	
+	-- Visual feedback
+	TweenService:Create(SaveBtn, TweenInfo.new(0.12), {
+		BackgroundColor3 = Color3.fromRGB(70,110,90)
+	}):Play()
+	task.delay(0.22, function() 
+		TweenService:Create(SaveBtn, TweenInfo.new(0.12), {
+			BackgroundColor3 = Color3.fromRGB(50,50,58)
+		}):Play() 
+	end)
+end)
+
+ResetBtn.MouseButton1Click:Connect(function()
+	if not RemoteEvent then 
+		warn("[JumpSettings] RemoteEvent not found")
+		return 
+	end
+	
+	playClick()
+	
+	-- Set attributes to default values
+	setAttr("JumpSize", 100)
+	setAttr("JumpPosX", 0)
+	setAttr("JumpPosY", 0)
+
+	-- Update slider UI
+	sizeSlider.SetValue(100)
+	xSlider.SetValue(0)
+	ySlider.SetValue(0)
+
+	-- CRITICAL: Apply settings immediately if TouchGui is ready
+	if touchGuiReady and DEFAULT_BUTTON_SIZE and DEFAULT_BUTTON_POS then
+		applySettings()
 	else
-		lockButton.Text = "🔓 MỞ KHÓA"
-		lockButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+		-- Wait for TouchGui and then apply
+		task.spawn(function()
+			if waitForTouchGuiAndInit() then
+				applySettings()
+			end
+		end)
 	end
+
+	-- Tell server to remove saved data
+	RemoteEvent:FireServer({ action = "Reset" })
+	
+	-- Visual feedback
+	TweenService:Create(ResetBtn, TweenInfo.new(0.12), {
+		BackgroundColor3 = Color3.fromRGB(70,70,70)
+	}):Play()
+	task.delay(0.22, function() 
+		TweenService:Create(ResetBtn, TweenInfo.new(0.12), {
+			BackgroundColor3 = Color3.fromRGB(40,40,46)
+		}):Play() 
+	end)
 end)
+
+if RemoteEvent then
+	RemoteEvent.OnClientEvent:Connect(function(payload)
+		if type(payload) ~= "table" then return end
+		if payload.action == "Loaded" then
+			local data = payload.data
+			if data then
+				setAttr("JumpSize", data.JumpSize or 100)
+				setAttr("JumpPosX", data.JumpPosX or 0)
+				setAttr("JumpPosY", data.JumpPosY or 0)
+			end
+			
+			-- Update sliders
+			sizeSlider.SetValue(getAttr("JumpSize", 100))
+			xSlider.SetValue(getAttr("JumpPosX", 0))
+			ySlider.SetValue(getAttr("JumpPosY", 0))
+			
+			-- CRITICAL: Wait for TouchGui to be ready before applying
+			if not touchGuiReady then
+				task.spawn(function()
+					waitForTouchGuiAndInit()
+				end)
+			else
+				applySettings()
+			end
+		end
+	end)
+end
+
+_G.ToggleJumpSettings = function() toggleMenu() end
+
+print("[JumpSettings] Client initialized FIXED By @xlyzzer")
