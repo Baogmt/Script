@@ -1,0 +1,285 @@
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+local SoundService = game:GetService("SoundService")
+local VirtualInputManager = game:GetService("VirtualInputManager")
+local Players = game:GetService("Players")
+local CoreGui = game:GetService("CoreGui")
+
+-------------------------------------------------
+-- HỆ THỐNG ÂM THANH (CLICK SOUND)
+-------------------------------------------------
+local clickSound = Instance.new("Sound")
+clickSound.Name = "MenuClickSound"
+clickSound.SoundId = "rbxassetid://6895079853"
+clickSound.Volume = 0.5
+clickSound.Parent = SoundService
+
+local function PlayClick()
+    clickSound:Play()
+end
+
+-------------------------------------------------
+-- TẠO NÚT NỔI BẤM PHÍM R (GÓC TRÊN BÊN PHẢI)
+-------------------------------------------------
+-- Kiểm tra và xóa nút cũ nếu script chạy lại
+if CoreGui:FindFirstChild("PressRButtonGui") then
+    CoreGui.PressRButtonGui:Destroy()
+end
+
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "PressRButtonGui"
+ScreenGui.Parent = CoreGui
+ScreenGui.Enabled = false -- Mặc định ẩn, chỉ hiện sau khi nhập đúng key
+
+local FloatingBtn = Instance.new("TextButton")
+FloatingBtn.Name = "PressRBtn"
+FloatingBtn.Size = UDim2.new(0, 50, 0, 50)
+FloatingBtn.Position = UDim2.new(1, -70, 0, 20) -- Góc trên bên phải
+FloatingBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+FloatingBtn.BorderColor3 = Color3.fromRGB(0, 170, 255)
+FloatingBtn.BorderSizePixel = 2
+FloatingBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+FloatingBtn.TextSize = 18
+FloatingBtn.Font = Enum.Font.SourceSansBold
+FloatingBtn.Text = "R"
+FloatingBtn.Parent = ScreenGui
+
+-- Bo tròn góc nút cho đẹp
+local UICorner = Instance.new("UICorner")
+UICorner.CornerRadius = UDim.new(0, 10)
+UICorner.Parent = FloatingBtn
+
+-- Hiệu ứng khi nhấn nút nổi
+FloatingBtn.MouseButton1Click:Connect(function()
+    PlayClick()
+    -- Giả lập nhấn và thả phím R
+    VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.R, false, game)
+    task.wait(0.05)
+    VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.R, false, game)
+    
+    -- Hiệu ứng đổi màu chớp nhoáng khi bấm
+    FloatingBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+    task.wait(0.1)
+    FloatingBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+end)
+
+-------------------------------------------------
+-- KHỞI TẠO RAYFIELD GUI
+-------------------------------------------------
+local Window = Rayfield:CreateWindow({
+   Name = "⚡ Super Fix Lag & Utilities",
+   LoadingTitle = "Đang tải Giao Diện...",
+   LoadingSubtitle = "by Roblox Studio",
+   ConfigurationSaving = {
+      Enabled = true,
+      FolderName = "FixLagConfig",
+      FileName = "ConfigMenu"
+   },
+   Discord = { Enabled = false },
+   KeySystem = true,
+   KeySettings = {
+      Title = "Nhập Key Để Sử Dụng",
+      Subtitle = "Hệ thống bảo vệ Script",
+      Note = "Key của bạn là: freekey", 
+      FileName = "FixLagKey", 
+      SaveKey = true,
+      GrabKeyFromSite = false,
+      Key = {"freekey"}
+   }
+})
+
+-- Khi nhập đúng Key và menu mở ra, sẽ bật hiện nút nổi ở góc trên bên phải
+task.spawn(function()
+    repeat task.wait() until Window and Window.Enabled
+    ScreenGui.Enabled = true
+end)
+
+local MainTab = Window:CreateTab("Main", 4483362458)
+
+-------------------------------------------------
+-- MỤC 1: CÁC NÚT FIX LAG
+-------------------------------------------------
+MainTab:CreateSection("Tối Ưu Đồ Họa (Fix Lag)")
+
+-- Nút 10%
+MainTab:CreateButton({
+   Name = "🔧 Fix Lag 10% (Chỉ tắt bóng đổ)",
+   Callback = function()
+       PlayClick()
+       game:GetService("Lighting").GlobalShadows = false
+       Rayfield:Notify({ Title = "10%", Content = "Đã tắt bóng đổ.", Duration = 2 })
+   end,
+})
+
+-- Nút 50%
+MainTab:CreateButton({
+   Name = "⚙️ Fix Lag 50% (Tắt hiệu ứng & hạt)",
+   Callback = function()
+       PlayClick()
+       game:GetService("Lighting").GlobalShadows = false
+       for _, v in pairs(workspace:GetDescendants()) do
+           if v:IsA("ParticleEmitter") or v:IsA("Smoke") or v:IsA("Fire") or v:IsA("Sparkles") then
+               v.Enabled = false
+           end
+       end
+       Rayfield:Notify({ Title = "50%", Content = "Đã tắt hiệu ứng và hạt.", Duration = 2 })
+   end,
+})
+
+-- Nút 99%
+MainTab:CreateButton({
+   Name = "🚀 Fix Lag 99% (Tối ưu toàn diện - Nhựa hóa)",
+   Callback = function()
+       PlayClick()
+       local Lighting = game:GetService("Lighting")
+       Lighting.GlobalShadows = false
+       Lighting.FogEnd = 9e9
+       for _, v in pairs(Lighting:GetChildren()) do
+           if v:IsA("PostEffect") then v.Enabled = false end
+       end
+       
+       for _, v in pairs(workspace:GetDescendants()) do
+           if v:IsA("BasePart") and not v:IsA("MeshPart") then
+               v.Material = Enum.Material.SmoothPlastic
+               v.Reflectance = 0
+           elseif v:IsA("Decal") or v:IsA("Texture") then
+               v:Destroy()
+           elseif v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Smoke") or v:IsA("Fire") then
+               v:Destroy()
+           end
+       end
+       
+       Rayfield:Notify({ Title = "99%", Content = "Đã tối ưu hóa tối đa đồ họa.", Duration = 3 })
+   end,
+})
+
+-------------------------------------------------
+-- MỤC 2: HOLD JUMP, BHOP & NÚT NỔI BẤM R
+-------------------------------------------------
+MainTab:CreateSection("Tính Năng Hỗ Trợ & Di Chuyển")
+
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local LocalPlayer = game:GetService("Players").LocalPlayer
+
+-- Bật/Tắt hiển thị nút nổi bấm phím R qua Menu Rayfield (nếu muốn ẩn hiện thủ công)
+MainTab:CreateToggle({
+   Name = "🔘 Hiện Nút Nổi Bấm Phím R (Góc Phải)",
+   CurrentValue = true,
+   Flag = "TogglePressRButton",
+   Callback = function(Value)
+       PlayClick()
+       ScreenGui.Enabled = Value
+   end,
+})
+
+-- Hold Jump
+local HoldJumpEnabled = false
+local IsJumpingKeyHeld = false
+local HoldJumpHeartbeat = nil
+local InputBeganConnection = nil
+local InputEndedConnection = nil
+
+MainTab:CreateToggle({
+   Name = "🦘 Hold Jump (Tự nhảy lại khi đáp đất)",
+   CurrentValue = false,
+   Flag = "HoldJumpToggle",
+   Callback = function(Value)
+       PlayClick()
+       HoldJumpEnabled = Value
+       
+       if HoldJumpEnabled then
+           InputBeganConnection = UserInputService.InputBegan:Connect(function(input, gameProcessed)
+               if not gameProcessed and (input.KeyCode == Enum.KeyCode.Space or input.UserInputType == Enum.UserInputType.Touch) then
+                   IsJumpingKeyHeld = true
+               end
+           end)
+           
+           InputEndedConnection = UserInputService.InputEnded:Connect(function(input)
+               if input.KeyCode == Enum.KeyCode.Space or input.UserInputType == Enum.UserInputType.Touch then
+                   IsJumpingKeyHeld = false
+               end
+           end)
+           
+           HoldJumpHeartbeat = RunService.Heartbeat:Connect(function()
+               if HoldJumpEnabled and IsJumpingKeyHeld then
+                   local char = LocalPlayer.Character
+                   if char then
+                       local humanoid = char:FindFirstChildOfClass("Humanoid")
+                       if humanoid and humanoid.FloorMaterial ~= Enum.Material.Air then
+                           humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+                       end
+                   end
+               end
+           end)
+           Rayfield:Notify({ Title = "Hold Jump", Content = "Đã BẬT Hold Jump.", Duration = 2 })
+       else
+           IsJumpingKeyHeld = false
+           if HoldJumpHeartbeat then HoldJumpHeartbeat:Disconnect() HoldJumpHeartbeat = nil end
+           if InputBeganConnection then InputBeganConnection:Disconnect() InputBeganConnection = nil end
+           if InputEndedConnection then InputEndedConnection:Disconnect() InputEndedConnection = nil end
+           Rayfield:Notify({ Title = "Hold Jump", Content = "Đã TẮT Hold Jump.", Duration = 2 })
+       end
+   end,
+})
+
+-- Bunny Hop (Bhop)
+local BhopEnabled = false
+local BhopSpeed = 24
+local BhopConnection = nil
+
+MainTab:CreateToggle({
+   Name = "🐰 Bunny Hop (Bhop gia tốc di chuyển)",
+   CurrentValue = false,
+   Flag = "BhopToggle",
+   Callback = function(Value)
+       PlayClick()
+       BhopEnabled = Value
+       
+       if BhopEnabled then
+           BhopConnection = RunService.Heartbeat:Connect(function()
+               if BhopEnabled then
+                   local char = LocalPlayer.Character
+                   if char then
+                       local humanoid = char:FindFirstChildOfClass("Humanoid")
+                       local hrp = char:FindFirstChild("HumanoidRootPart")
+                       
+                       if humanoid and hrp then
+                           if humanoid.FloorMaterial ~= Enum.Material.Air and humanoid.MoveDirection.Magnitude > 0 then
+                               humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+                           end
+                           
+                           if humanoid.MoveDirection.Magnitude > 0 then
+                               local moveDir = humanoid.MoveDirection
+                               hrp.AssemblyLinearVelocity = Vector3.new(
+                                   moveDir.X * BhopSpeed,
+                                   hrp.AssemblyLinearVelocity.Y,
+                                   moveDir.Z * BhopSpeed
+                               )
+                           end
+                       end
+                   end
+               end
+           end)
+           Rayfield:Notify({ Title = "Bhop", Content = "Đã BẬT Bunny Hop.", Duration = 2 })
+       else
+           if BhopConnection then
+               BhopConnection:Disconnect()
+               BhopConnection = nil
+           end
+           Rayfield:Notify({ Title = "Bhop", Content = "Đã TẮT Bunny Hop.", Duration = 2 })
+       end
+   end,
+})
+
+-- Slider Tốc độ Bhop
+MainTab:CreateSlider({
+   Name = "⚡ Tốc Độ Bhop",
+   Range = {16, 100},
+   Increment = 1,
+   Suffix = " Speed",
+   CurrentValue = 24,
+   Flag = "BhopSpeedSlider",
+   Callback = function(Value)
+       BhopSpeed = Value
+   end,
+})
