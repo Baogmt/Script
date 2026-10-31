@@ -22,7 +22,7 @@ local function PlayClick()
 end
 
 -------------------------------------------------
--- HỆ THỐNG PHÍM ẢO & TÙY CHỈNH (KEYPAD)
+-- HỆ THỐNG PHÍM ẢO TÙY CHỈNH TỪNG NÚT & DRAG RIÊNG LẺ
 -------------------------------------------------
 if CoreGui:FindFirstChild("VirtualKeypadGui") then
     CoreGui.VirtualKeypadGui:Destroy()
@@ -33,191 +33,129 @@ ScreenGui.Name = "VirtualKeypadGui"
 ScreenGui.Parent = CoreGui
 ScreenGui.Enabled = false
 
--- Khung chứa chính (Có thể kéo thả vị trí)
-local KeypadFrame = Instance.new("Frame")
-KeypadFrame.Name = "KeypadFrame"
-KeypadFrame.Size = UDim2.new(0, 220, 0, 220)
-KeypadFrame.Position = UDim2.new(1, -240, 0.35, 0)
-KeypadFrame.BackgroundTransparency = 1
-KeypadFrame.Active = true
-KeypadFrame.Parent = ScreenGui
-
--- Tính năng kéo thả bảng phím (Drag System)
-local isDragging = false
-local dragInput, dragStart, startPos
-
-KeypadFrame.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        isDragging = true
-        dragStart = input.Position
-        startPos = KeypadFrame.Position
-        
-        input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then
-                isDragging = false
-            end
-        end)
-    end
-end)
-
-KeypadFrame.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-        dragInput = input
-    end
-end)
-
-UserInputService.InputChanged:Connect(function(input)
-    if input == dragInput and isDragging then
-        local delta = input.Position - dragStart
-        KeypadFrame.Position = UDim2.new(
-            startPos.X.Scale, 
-            startPos.X.Offset + delta.X, 
-            startPos.Y.Scale, 
-            startPos.Y.Offset + delta.Y
-        )
-    end
-end)
-
--- Quản lý danh sách phím & Vuốt mượt (Swipe)
+local IsEditingLayout = false
 local RegisteredKeys = {}
-local ActiveKey = nil
-local CurrentShape = "Rounded" -- Rounded, Square, Circle
+local CurrentShape = "Rounded"
 local BaseButtonSize = 35
 
-local function TriggerKeyDown(keyData)
-    if ActiveKey ~= keyData then
-        if ActiveKey then
-            ActiveKey.Btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-            VirtualInputManager:SendKeyEvent(false, ActiveKey.KeyCode, false, game)
-        end
-        ActiveKey = keyData
-        keyData.Btn.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
-        PlayClick()
-        VirtualInputManager:SendKeyEvent(true, keyData.KeyCode, false, game)
-    end
-end
-
-local function TriggerKeyUp()
-    if ActiveKey then
-        ActiveKey.Btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-        VirtualInputManager:SendKeyEvent(false, ActiveKey.KeyCode, false, game)
-        ActiveKey = nil
-    end
-end
-
-local isPressing = false
-
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        isPressing = true
-    end
-end)
-
-UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        isPressing = false
-        TriggerKeyUp()
-    end
-end)
-
-UserInputService.InputChanged:Connect(function(input)
-    if isPressing and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-        local pos = input.Position
-        local found = false
-        for _, keyData in ipairs(RegisteredKeys) do
-            local btn = keyData.Btn
-            local absPos = btn.AbsolutePosition
-            local absSize = btn.AbsoluteSize
-            if pos.X >= absPos.X and pos.X <= absPos.X + absSize.X and pos.Y >= absPos.Y and pos.Y <= absPos.Y + absSize.Y then
-                TriggerKeyDown(keyData)
-                found = true
-                break
-            end
-        end
-        if not found and ActiveKey then
-            TriggerKeyUp()
-        end
-    end
-end)
-
-local function CreateVirtualKey(name, text, gridX, gridY, widthMult, keyCode)
+local function CreateCustomButton(name, text, defaultPos, widthMult, keyCode)
     local btn = Instance.new("TextButton")
     btn.Name = name
+    btn.Size = UDim2.new(0, BaseButtonSize * widthMult, 0, BaseButtonSize)
+    btn.Position = defaultPos
     btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
     btn.BorderColor3 = Color3.fromRGB(0, 170, 255)
     btn.BorderSizePixel = 1
     btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    btn.TextSize = 13
+    btn.TextSize = 12
     btn.Font = Enum.Font.SourceSansBold
     btn.Text = text
-    btn.Parent = KeypadFrame
+    btn.Active = true
+    btn.Parent = ScreenGui
 
     local corner = Instance.new("UICorner")
-    corner.Name = "Corner"
     corner.CornerRadius = UDim.new(0, 6)
     corner.Parent = btn
+
+    local isDown = false
+
+    -- Xử lý nhấn phím (Không chặn xoay camera)
+    btn.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            if IsEditingLayout then return end
+            isDown = true
+            PlayClick()
+            btn.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+            VirtualInputManager:SendKeyEvent(true, keyCode, false, game)
+        end
+    end)
+
+    btn.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            if isDown then
+                isDown = false
+                btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+                VirtualInputManager:SendKeyEvent(false, keyCode, false, game)
+            end
+        end
+    end)
+
+    -- Tính năng kéo thả riêng lẻ từng nút khi bật chế độ Edit
+    local dragging = false
+    local dragInput, dragStart, startPos
+
+    btn.InputBegan:Connect(function(input)
+        if IsEditingLayout and (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
+            dragging = true
+            dragStart = input.Position
+            startPos = btn.Position
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+
+    btn.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if input == dragInput and dragging and IsEditingLayout then
+            local delta = input.Position - dragStart
+            btn.Position = UDim2.new(
+                startPos.X.Scale, 
+                startPos.X.Offset + delta.X, 
+                startPos.Y.Scale, 
+                startPos.Y.Offset + delta.Y
+            )
+        end
+    end)
 
     local keyData = {
         Btn = btn,
         Corner = corner,
-        KeyCode = keyCode,
-        GridX = gridX,
-        GridY = gridY,
-        WidthMult = widthMult or 1
+        WidthMult = widthMult
     }
-
     table.insert(RegisteredKeys, keyData)
-
-    btn.MouseButton1Down:Connect(function()
-        TriggerKeyDown(keyData)
-    end)
-
     return keyData
 end
 
-local function UpdateKeypadLayout()
-    for _, keyData in ipairs(RegisteredKeys) do
-        local unit = BaseButtonSize
-        local spacing = 4
-        
-        local w = (unit * keyData.WidthMult) + (spacing * (keyData.WidthMult - 1))
-        local h = unit
-        local x = keyData.GridX * (unit + spacing)
-        local y = keyData.GridY * (unit + spacing)
-        
-        keyData.Btn.Size = UDim2.new(0, w, 0, h)
-        keyData.Btn.Position = UDim2.new(0, x, 0, y)
+-- 📌 TẠO CÁC NÚT (Không có phím F)
+-- Hàng phím Số (1 - 6)
+CreateCustomButton("Num1", "1", UDim2.new(1, -250, 0.2, 0), 0.8, Enum.KeyCode.One)
+CreateCustomButton("Num2", "2", UDim2.new(1, -210, 0.2, 0), 0.8, Enum.KeyCode.Two)
+CreateCustomButton("Num3", "3", UDim2.new(1, -170, 0.2, 0), 0.8, Enum.KeyCode.Three)
+CreateCustomButton("Num4", "4", UDim2.new(1, -130, 0.2, 0), 0.8, Enum.KeyCode.Four)
+CreateCustomButton("Num5", "5", UDim2.new(1, -90, 0.2, 0), 0.8, Enum.KeyCode.Five)
+CreateCustomButton("Num6", "6", UDim2.new(1, -50, 0.2, 0), 0.8, Enum.KeyCode.Six)
 
+-- Cụm WASD & G
+CreateCustomButton("W", "W", UDim2.new(1, -170, 0.30, 0), 1, Enum.KeyCode.W)
+CreateCustomButton("A", "A", UDim2.new(1, -215, 0.38, 0), 1, Enum.KeyCode.A)
+CreateCustomButton("S", "S", UDim2.new(1, -170, 0.38, 0), 1, Enum.KeyCode.S)
+CreateCustomButton("D", "D", UDim2.new(1, -125, 0.38, 0), 1, Enum.KeyCode.D)
+CreateCustomButton("G", "G", UDim2.new(1, -75, 0.38, 0), 1, Enum.KeyCode.G)
+
+-- Phím Ctrl & Space
+CreateCustomButton("Ctrl", "Ctrl", UDim2.new(1, -215, 0.46, 0), 1.2, Enum.KeyCode.LeftControl)
+CreateCustomButton("Space", "Space", UDim2.new(1, -145, 0.46, 0), 2.2, Enum.KeyCode.Space)
+
+local function UpdateButtonStyles()
+    for _, data in ipairs(RegisteredKeys) do
+        data.Btn.Size = UDim2.new(0, BaseButtonSize * data.WidthMult, 0, BaseButtonSize)
         if CurrentShape == "Square" then
-            keyData.Corner.CornerRadius = UDim.new(0, 0)
+            data.Corner.CornerRadius = UDim.new(0, 0)
         elseif CurrentShape == "Circle" then
-            keyData.Corner.CornerRadius = UDim.new(0.5, 0)
+            data.Corner.CornerRadius = UDim.new(0.5, 0)
         else
-            keyData.Corner.CornerRadius = UDim.new(0, 6)
+            data.Corner.CornerRadius = UDim.new(0, 6)
         end
     end
 end
-
--- 📌 Dãy phím số (1 -> 6) ở hàng đầu
-CreateVirtualKey("Num1", "1", 0, 0, 0.8, Enum.KeyCode.One)
-CreateVirtualKey("Num2", "2", 0.9, 0, 0.8, Enum.KeyCode.Two)
-CreateVirtualKey("Num3", "3", 1.8, 0, 0.8, Enum.KeyCode.Three)
-CreateVirtualKey("Num4", "4", 2.7, 0, 0.8, Enum.KeyCode.Four)
-CreateVirtualKey("Num5", "5", 3.6, 0, 0.8, Enum.KeyCode.Five)
-CreateVirtualKey("Num6", "6", 4.5, 0, 0.8, Enum.KeyCode.Six)
-
--- 📌 Cụm WASD & G
-CreateVirtualKey("W", "W", 1, 1, 1, Enum.KeyCode.W)
-CreateVirtualKey("A", "A", 0, 2, 1, Enum.KeyCode.A)
-CreateVirtualKey("S", "S", 1, 2, 1, Enum.KeyCode.S)
-CreateVirtualKey("D", "D", 2, 2, 1, Enum.KeyCode.D)
-CreateVirtualKey("G", "G", 3.5, 2, 1, Enum.KeyCode.G)
-
--- 📌 Phím Ctrl & Space
-CreateVirtualKey("Ctrl", "Ctrl", 0, 3.2, 1.3, Enum.KeyCode.LeftControl)
-CreateVirtualKey("Space", "Space", 1.4, 3.2, 2.2, Enum.KeyCode.Space)
-
-UpdateKeypadLayout()
 
 -------------------------------------------------
 -- KHỞI TẠO RAYFIELD GUI
@@ -226,11 +164,7 @@ local Window = Rayfield:CreateWindow({
    Name = "⚡ Super Fix Lag & Utilities",
    LoadingTitle = "Đang tải Giao Diện...",
    LoadingSubtitle = "by Roblox Studio",
-   ConfigurationSaving = {
-      Enabled = true,
-      FolderName = "FixLagConfig",
-      FileName = "ConfigMenu"
-   },
+   ConfigurationSaving = { Enabled = true, FolderName = "FixLagConfig", FileName = "ConfigMenu" },
    Discord = { Enabled = false },
    KeySystem = true,
    KeySettings = {
@@ -305,7 +239,7 @@ MainTab:CreateButton({
 })
 
 -------------------------------------------------
--- MỤC 2: TÙY CHỈNH & ĐIỀU CHỈNH VỊ TRÍ PHÍM ẢO
+-- MỤC 2: TÙY CHỈNH TỪNG NÚT & DI CHUYỂN
 -------------------------------------------------
 MainTab:CreateSection("Tùy Chỉnh Phím Ảo (1-6, WASD, Ctrl, G)")
 
@@ -316,6 +250,21 @@ MainTab:CreateToggle({
    Callback = function(Value)
        PlayClick()
        ScreenGui.Enabled = Value
+   end,
+})
+
+MainTab:CreateToggle({
+   Name = "🔓 Chế Độ Chỉnh Vị Trí Từng Nút (Drag Mode)",
+   CurrentValue = false,
+   Flag = "ToggleEditLayout",
+   Callback = function(Value)
+       PlayClick()
+       IsEditingLayout = Value
+       if Value then
+           Rayfield:Notify({ Title = "Chỉnh vị trí", Content = "Đã BẬT: Hãy dùng tay kéo từng nút đến vị trí bạn muốn!", Duration = 3 })
+       else
+           Rayfield:Notify({ Title = "Chỉnh vị trí", Content = "Đã TẮT: Phím đã sẵn sàng sử dụng.", Duration = 2 })
+       end
    end,
 })
 
@@ -333,7 +282,7 @@ MainTab:CreateDropdown({
        else
            CurrentShape = "Rounded"
        end
-       UpdateKeypadLayout()
+       UpdateButtonStyles()
    end,
 })
 
@@ -346,7 +295,7 @@ MainTab:CreateSlider({
    Flag = "KeySizeSlider",
    Callback = function(Value)
        BaseButtonSize = Value
-       UpdateKeypadLayout()
+       UpdateButtonStyles()
    end,
 })
 
