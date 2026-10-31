@@ -38,12 +38,15 @@ local RegisteredKeys = {}
 local CurrentShape = "Rounded"
 local BaseButtonSize = 35
 
-local function CreateCustomButton(name, text, defaultPos, widthMult, keyCode)
+-- Hàm tạo phím (Nền trong suốt, chữ và viền nổi bật)
+local function CreateCustomButton(name, text, defaultPos, widthMult, keyCodes)
     local btn = Instance.new("TextButton")
     btn.Name = name
     btn.Size = UDim2.new(0, BaseButtonSize * widthMult, 0, BaseButtonSize)
     btn.Position = defaultPos
-    btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    -- Làm nền trong suốt (0.4 = trong suốt 40%, bạn có thể thay đổi số này)
+    btn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    btn.BackgroundTransparency = 0.4
     btn.BorderColor3 = Color3.fromRGB(0, 170, 255)
     btn.BorderSizePixel = 1
     btn.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -58,15 +61,19 @@ local function CreateCustomButton(name, text, defaultPos, widthMult, keyCode)
     corner.Parent = btn
 
     local isDown = false
+    local keys = typeof(keyCodes) == "table" and keyCodes or {keyCodes}
 
-    -- Xử lý nhấn/giữ phím (Không chặn xoay camera)
+    -- Xử lý nhấn/giữ phím
     btn.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             if IsEditingLayout then return end
             isDown = true
             PlayClick()
             btn.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
-            VirtualInputManager:SendKeyEvent(true, keyCode, false, game)
+            btn.BackgroundTransparency = 0.1 -- Sáng hơn khi bấm
+            for _, k in ipairs(keys) do
+                VirtualInputManager:SendKeyEvent(true, k, false, game)
+            end
         end
     end)
 
@@ -74,13 +81,16 @@ local function CreateCustomButton(name, text, defaultPos, widthMult, keyCode)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             if isDown then
                 isDown = false
-                btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-                VirtualInputManager:SendKeyEvent(false, keyCode, false, game)
+                btn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+                btn.BackgroundTransparency = 0.4 -- Trở về độ trong suốt ban đầu
+                for _, k in ipairs(keys) do
+                    VirtualInputManager:SendKeyEvent(false, k, false, game)
+                end
             end
         end
     end)
 
-    -- Tính năng kéo thả riêng lẻ từng nút khi bật chế độ Edit
+    -- Drag System cho từng nút
     local dragging = false
     local dragInput, dragStart, startPos
 
@@ -126,24 +136,36 @@ end
 
 -- 📌 TẠO CÁC NÚT TRÊN MÀN HÌNH
 -- Hàng phím Số (1 - 6)
-CreateCustomButton("Num1", "1", UDim2.new(1, -250, 0.2, 0), 0.8, Enum.KeyCode.One)
-CreateCustomButton("Num2", "2", UDim2.new(1, -210, 0.2, 0), 0.8, Enum.KeyCode.Two)
-CreateCustomButton("Num3", "3", UDim2.new(1, -170, 0.2, 0), 0.8, Enum.KeyCode.Three)
-CreateCustomButton("Num4", "4", UDim2.new(1, -130, 0.2, 0), 0.8, Enum.KeyCode.Four)
-CreateCustomButton("Num5", "5", UDim2.new(1, -90, 0.2, 0), 0.8, Enum.KeyCode.Five)
-CreateCustomButton("Num6", "6", UDim2.new(1, -50, 0.2, 0), 0.8, Enum.KeyCode.Six)
+CreateCustomButton("Num1", "1", UDim2.new(1, -250, 0.15, 0), 0.8, Enum.KeyCode.One)
+CreateCustomButton("Num2", "2", UDim2.new(1, -210, 0.15, 0), 0.8, Enum.KeyCode.Two)
+CreateCustomButton("Num3", "3", UDim2.new(1, -170, 0.15, 0), 0.8, Enum.KeyCode.Three)
+CreateCustomButton("Num4", "4", UDim2.new(1, -130, 0.15, 0), 0.8, Enum.KeyCode.Four)
+CreateCustomButton("Num5", "5", UDim2.new(1, -90, 0.15, 0), 0.8, Enum.KeyCode.Five)
+CreateCustomButton("Num6", "6", UDim2.new(1, -50, 0.15, 0), 0.8, Enum.KeyCode.Six)
 
--- Cụm WASD, G & Thêm phím R (Dạng giữ)
-CreateCustomButton("W", "W", UDim2.new(1, -170, 0.30, 0), 1, Enum.KeyCode.W)
-CreateCustomButton("A", "A", UDim2.new(1, -215, 0.38, 0), 1, Enum.KeyCode.A)
-CreateCustomButton("S", "S", UDim2.new(1, -170, 0.38, 0), 1, Enum.KeyCode.S)
-CreateCustomButton("D", "D", UDim2.new(1, -125, 0.38, 0), 1, Enum.KeyCode.D)
-CreateCustomButton("G", "G", UDim2.new(1, -75, 0.38, 0), 1, Enum.KeyCode.G)
-CreateCustomButton("R", "R", UDim2.new(1, -75, 0.30, 0), 1, Enum.KeyCode.R) -- Phím R dạng giữ mới thêm
+-- Phím Q, W, E, F, G
+CreateCustomButton("Q", "Q", UDim2.new(1, -250, 0.24, 0), 0.8, Enum.KeyCode.Q)
+CreateCustomButton("W", "W", UDim2.new(1, -210, 0.24, 0), 0.8, Enum.KeyCode.W)
+CreateCustomButton("E", "E", UDim2.new(1, -170, 0.24, 0), 0.8, Enum.KeyCode.E)
+CreateCustomButton("F", "F", UDim2.new(1, -130, 0.24, 0), 0.8, Enum.KeyCode.F) -- Thêm phím F
+CreateCustomButton("G", "G", UDim2.new(1, -90, 0.24, 0), 0.8, Enum.KeyCode.G)
+
+-- Các phím chạy góc chéo (WA, WD, SA, SD)
+CreateCustomButton("WA", "WA", UDim2.new(1, -215, 0.32, 1), 1, {Enum.KeyCode.W, Enum.KeyCode.A})
+CreateCustomButton("WD", "WD", UDim2.new(1, -125, 0.32, 1), 1, {Enum.KeyCode.W, Enum.KeyCode.D})
+
+-- Cụm A, S, D
+CreateCustomButton("A", "A", UDim2.new(1, -215, 0.40, 0), 1, Enum.KeyCode.A)
+CreateCustomButton("S", "S", UDim2.new(1, -170, 0.40, 0), 1, Enum.KeyCode.S)
+CreateCustomButton("D", "D", UDim2.new(1, -125, 0.40, 0), 1, Enum.KeyCode.D)
+
+-- Các phím chéo lùi SA, SD
+CreateCustomButton("SA", "SA", UDim2.new(1, -215, 0.48, 0), 1, {Enum.KeyCode.S, Enum.KeyCode.A})
+CreateCustomButton("SD", "SD", UDim2.new(1, -125, 0.48, 0), 1, {Enum.KeyCode.S, Enum.KeyCode.D})
 
 -- Phím Ctrl (Giữ) & Space
-CreateCustomButton("Ctrl", "Ctrl", UDim2.new(1, -215, 0.46, 0), 1.2, Enum.KeyCode.LeftControl)
-CreateCustomButton("Space", "Space", UDim2.new(1, -145, 0.46, 0), 2.2, Enum.KeyCode.Space)
+CreateCustomButton("Ctrl", "Ctrl", UDim2.new(1, -215, 0.56, 0), 1.2, Enum.KeyCode.LeftControl)
+CreateCustomButton("Space", "Space", UDim2.new(1, -145, 0.56, 0), 2.2, Enum.KeyCode.Space)
 
 local function UpdateButtonStyles()
     for _, data in ipairs(RegisteredKeys) do
@@ -242,7 +264,7 @@ MainTab:CreateButton({
 -------------------------------------------------
 -- MỤC 2: TÙY CHỈNH TỪNG NÚT & DI CHUYỂN
 -------------------------------------------------
-MainTab:CreateSection("Tùy Chỉnh Phím Ảo (1-6, WASD, Ctrl, R, G)")
+MainTab:CreateSection("Tùy Chỉnh Phím Ảo (F, Q, E, WASD, Ctrl, G)")
 
 MainTab:CreateToggle({
    Name = "⌨️ Hiện Bảng Phím Ảo",
@@ -367,7 +389,7 @@ MainTab:CreateToggle({
        BhopEnabled = Value
        
        if BhopEnabled then
-           BhopConnection = RunService.Heartbeat:Connect(function()
+           BhopConnection = RunService.Heartbeat:Connect(function(value)
                if BhopEnabled then
                    local char = LocalPlayer.Character
                    if char then
