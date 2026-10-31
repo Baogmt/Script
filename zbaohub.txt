@@ -1,8 +1,12 @@
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 local SoundService = game:GetService("SoundService")
 local VirtualInputManager = game:GetService("VirtualInputManager")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local CoreGui = game:GetService("CoreGui")
+
+local LocalPlayer = Players.LocalPlayer
 
 -------------------------------------------------
 -- HỆ THỐNG ÂM THANH (CLICK SOUND)
@@ -29,17 +33,55 @@ ScreenGui.Name = "VirtualKeypadGui"
 ScreenGui.Parent = CoreGui
 ScreenGui.Enabled = false
 
+-- Khung chứa chính (Có thể kéo thả vị trí)
 local KeypadFrame = Instance.new("Frame")
 KeypadFrame.Name = "KeypadFrame"
 KeypadFrame.Size = UDim2.new(0, 220, 0, 220)
 KeypadFrame.Position = UDim2.new(1, -240, 0.35, 0)
 KeypadFrame.BackgroundTransparency = 1
+KeypadFrame.Active = true
 KeypadFrame.Parent = ScreenGui
 
--- Quản lý danh sách các phím & Trạng thái Vuốt (Drag/Swipe)
+-- Tính năng kéo thả bảng phím (Drag System)
+local isDragging = false
+local dragInput, dragStart, startPos
+
+KeypadFrame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        isDragging = true
+        dragStart = input.Position
+        startPos = KeypadFrame.Position
+        
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                isDragging = false
+            end
+        end)
+    end
+end)
+
+KeypadFrame.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+        dragInput = input
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if input == dragInput and isDragging then
+        local delta = input.Position - dragStart
+        KeypadFrame.Position = UDim2.new(
+            startPos.X.Scale, 
+            startPos.X.Offset + delta.X, 
+            startPos.Y.Scale, 
+            startPos.Y.Offset + delta.Y
+        )
+    end
+end)
+
+-- Quản lý danh sách phím & Vuốt mượt (Swipe)
 local RegisteredKeys = {}
 local ActiveKey = nil
-local CurrentShape = "Rounded" -- Default: Rounded, Square, Circle
+local CurrentShape = "Rounded" -- Rounded, Square, Circle
 local BaseButtonSize = 35
 
 local function TriggerKeyDown(keyData)
@@ -63,11 +105,9 @@ local function TriggerKeyUp()
     end
 end
 
--- Xử lý sự kiện di chuyển ngón tay / chuột (Swipe mượt giữa các nút)
-local UserInputService = game:GetService("UserInputService")
 local isPressing = false
 
-UserInputService.InputBegan:Connect(function(input)
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         isPressing = true
     end
@@ -100,7 +140,6 @@ UserInputService.InputChanged:Connect(function(input)
     end
 end)
 
--- Hàm tạo phím ảo
 local function CreateVirtualKey(name, text, gridX, gridY, widthMult, keyCode)
     local btn = Instance.new("TextButton")
     btn.Name = name
@@ -136,7 +175,6 @@ local function CreateVirtualKey(name, text, gridX, gridY, widthMult, keyCode)
     return keyData
 end
 
--- Cập nhật kích thước & hình dáng nút
 local function UpdateKeypadLayout()
     for _, keyData in ipairs(RegisteredKeys) do
         local unit = BaseButtonSize
@@ -154,28 +192,28 @@ local function UpdateKeypadLayout()
             keyData.Corner.CornerRadius = UDim.new(0, 0)
         elseif CurrentShape == "Circle" then
             keyData.Corner.CornerRadius = UDim.new(0.5, 0)
-        else -- Rounded
+        else
             keyData.Corner.CornerRadius = UDim.new(0, 6)
         end
     end
 end
 
--- 📌 Dãy phím F1 -> F6 (Hàng 0)
-CreateVirtualKey("F1", "F1", 0, 0, 0.8, Enum.KeyCode.F1)
-CreateVirtualKey("F2", "F2", 0.9, 0, 0.8, Enum.KeyCode.F2)
-CreateVirtualKey("F3", "F3", 1.8, 0, 0.8, Enum.KeyCode.F3)
-CreateVirtualKey("F4", "F4", 2.7, 0, 0.8, Enum.KeyCode.F4)
-CreateVirtualKey("F5", "F5", 3.6, 0, 0.8, Enum.KeyCode.F5)
-CreateVirtualKey("F6", "F6", 4.5, 0, 0.8, Enum.KeyCode.F6)
+-- 📌 Dãy phím số (1 -> 6) ở hàng đầu
+CreateVirtualKey("Num1", "1", 0, 0, 0.8, Enum.KeyCode.One)
+CreateVirtualKey("Num2", "2", 0.9, 0, 0.8, Enum.KeyCode.Two)
+CreateVirtualKey("Num3", "3", 1.8, 0, 0.8, Enum.KeyCode.Three)
+CreateVirtualKey("Num4", "4", 2.7, 0, 0.8, Enum.KeyCode.Four)
+CreateVirtualKey("Num5", "5", 3.6, 0, 0.8, Enum.KeyCode.Five)
+CreateVirtualKey("Num6", "6", 4.5, 0, 0.8, Enum.KeyCode.Six)
 
--- 📌 Cụm WASD & G (Hàng 1, 2)
+-- 📌 Cụm WASD & G
 CreateVirtualKey("W", "W", 1, 1, 1, Enum.KeyCode.W)
 CreateVirtualKey("A", "A", 0, 2, 1, Enum.KeyCode.A)
 CreateVirtualKey("S", "S", 1, 2, 1, Enum.KeyCode.S)
 CreateVirtualKey("D", "D", 2, 2, 1, Enum.KeyCode.D)
 CreateVirtualKey("G", "G", 3.5, 2, 1, Enum.KeyCode.G)
 
--- 📌 Phím Ctrl & Space (Hàng 3)
+-- 📌 Phím Ctrl & Space
 CreateVirtualKey("Ctrl", "Ctrl", 0, 3.2, 1.3, Enum.KeyCode.LeftControl)
 CreateVirtualKey("Space", "Space", 1.4, 3.2, 2.2, Enum.KeyCode.Space)
 
@@ -267,9 +305,9 @@ MainTab:CreateButton({
 })
 
 -------------------------------------------------
--- MỤC 2: TÙY CHỈNH BẢNG PHÍM ẢO (CUSTOMIZE KEYPAD)
+-- MỤC 2: TÙY CHỈNH & ĐIỀU CHỈNH VỊ TRÍ PHÍM ẢO
 -------------------------------------------------
-MainTab:CreateSection("Tùy Chỉnh Phím Ảo (WASD, F1-F6, Ctrl, G)")
+MainTab:CreateSection("Tùy Chỉnh Phím Ảo (1-6, WASD, Ctrl, G)")
 
 MainTab:CreateToggle({
    Name = "⌨️ Hiện Bảng Phím Ảo",
