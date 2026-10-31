@@ -3,10 +3,12 @@ local SoundService = game:GetService("SoundService")
 local VirtualInputManager = game:GetService("VirtualInputManager")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
+local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local CoreGui = game:GetService("CoreGui")
 
 local LocalPlayer = Players.LocalPlayer
+local CONFIG_FILE_NAME = "VirtualKeypadPositions.json"
 
 -------------------------------------------------
 -- HỆ THỐNG ÂM THANH (CLICK SOUND)
@@ -22,7 +24,7 @@ local function PlayClick()
 end
 
 -------------------------------------------------
--- HỆ THỐNG PHÍM ẢO TÙY CHỈNH TỪNG NÚT & DRAG RIÊNG LẺ
+-- HỆ THỐNG PHÍM ẢO & HỆ THỐNG LƯU SETTING (SAVE/LOAD)
 -------------------------------------------------
 if CoreGui:FindFirstChild("VirtualKeypadGui") then
     CoreGui.VirtualKeypadGui:Destroy()
@@ -35,16 +37,71 @@ ScreenGui.Enabled = false
 
 local IsEditingLayout = false
 local RegisteredKeys = {}
+local RegisteredKeysByName = {}
 local CurrentShape = "Rounded"
 local BaseButtonSize = 35
 
--- Hàm tạo phím (Nền trong suốt, chữ và viền nổi bật)
+-- Hàm lưu cấu hình vị trí các nút vào file JSON
+local function SaveKeypadConfig()
+    local configData = {
+        Shape = CurrentShape,
+        Size = BaseButtonSize,
+        Positions = {}
+    }
+    
+    for name, data in pairs(RegisteredKeysByName) do
+        local pos = data.Btn.Position
+        configData.Positions[name] = {
+            XScale = pos.X.Scale,
+            XOffset = pos.X.Offset,
+            YScale = pos.Y.Scale,
+            YOffset = pos.Y.Offset
+        }
+    end
+    
+    local success, err = pcall(function()
+        if writefile then
+            writefile(CONFIG_FILE_NAME, HttpService:JSONEncode(configData))
+        end
+    end)
+    if success then
+        Rayfield:Notify({ Title = "Lưu Cấu Hình", Content = "Đã tự động lưu bố cục phím!", Duration = 2 })
+    end
+end
+
+-- Hàm đọc cấu hình vị trí các nút từ file JSON
+local function LoadKeypadConfig()
+    if not readfile or not isfile or not isfile(CONFIG_FILE_NAME) then return end
+    
+    local success, result = pcall(function()
+        return HttpService:JSONDecode(readfile(CONFIG_FILE_NAME))
+    end)
+    
+    if success and result then
+        if result.Shape then CurrentShape = result.Shape end
+        if result.Size then BaseButtonSize = result.Size end
+        
+        if result.Positions then
+            for name, posData in pairs(result.Positions) do
+                if RegisteredKeysByName[name] then
+                    RegisteredKeysByName[name].Btn.Position = UDim2.new(
+                        posData.XScale or 1,
+                        posData.XOffset or 0,
+                        posData.YScale or 0.5,
+                        posData.YOffset or 0
+                    )
+                end
+            end
+        end
+    end
+end
+
+-- Hàm tạo phím (Nền trong suốt, tự lưu vị trí khi thả tay)
 local function CreateCustomButton(name, text, defaultPos, widthMult, keyCodes)
     local btn = Instance.new("TextButton")
     btn.Name = name
     btn.Size = UDim2.new(0, BaseButtonSize * widthMult, 0, BaseButtonSize)
     btn.Position = defaultPos
-    -- Làm nền trong suốt (0.4 = trong suốt 40%, bạn có thể thay đổi số này)
     btn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
     btn.BackgroundTransparency = 0.4
     btn.BorderColor3 = Color3.fromRGB(0, 170, 255)
@@ -70,7 +127,7 @@ local function CreateCustomButton(name, text, defaultPos, widthMult, keyCodes)
             isDown = true
             PlayClick()
             btn.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
-            btn.BackgroundTransparency = 0.1 -- Sáng hơn khi bấm
+            btn.BackgroundTransparency = 0.1
             for _, k in ipairs(keys) do
                 VirtualInputManager:SendKeyEvent(true, k, false, game)
             end
@@ -82,7 +139,7 @@ local function CreateCustomButton(name, text, defaultPos, widthMult, keyCodes)
             if isDown then
                 isDown = false
                 btn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-                btn.BackgroundTransparency = 0.4 -- Trở về độ trong suốt ban đầu
+                btn.BackgroundTransparency = 0.4
                 for _, k in ipairs(keys) do
                     VirtualInputManager:SendKeyEvent(false, k, false, game)
                 end
@@ -90,7 +147,7 @@ local function CreateCustomButton(name, text, defaultPos, widthMult, keyCodes)
         end
     end)
 
-    -- Drag System cho từng nút
+    -- Drag System + Tự lưu vị trí sau khi thả tay ở Drag Mode
     local dragging = false
     local dragInput, dragStart, startPos
 
@@ -101,7 +158,10 @@ local function CreateCustomButton(name, text, defaultPos, widthMult, keyCodes)
             startPos = btn.Position
             input.Changed:Connect(function()
                 if input.UserInputState == Enum.UserInputState.End then
-                    dragging = false
+                    if dragging then
+                        dragging = false
+                        SaveKeypadConfig() -- Tự động lưu khi nhả tay ra
+                    end
                 end
             end)
         end
@@ -126,16 +186,17 @@ local function CreateCustomButton(name, text, defaultPos, widthMult, keyCodes)
     end)
 
     local keyData = {
+        Name = name,
         Btn = btn,
         Corner = corner,
         WidthMult = widthMult
     }
     table.insert(RegisteredKeys, keyData)
+    RegisteredKeysByName[name] = keyData
     return keyData
 end
 
 -- 📌 TẠO CÁC NÚT TRÊN MÀN HÌNH
--- Hàng phím Số (1 - 6)
 CreateCustomButton("Num1", "1", UDim2.new(1, -250, 0.15, 0), 0.8, Enum.KeyCode.One)
 CreateCustomButton("Num2", "2", UDim2.new(1, -210, 0.15, 0), 0.8, Enum.KeyCode.Two)
 CreateCustomButton("Num3", "3", UDim2.new(1, -170, 0.15, 0), 0.8, Enum.KeyCode.Three)
@@ -143,27 +204,22 @@ CreateCustomButton("Num4", "4", UDim2.new(1, -130, 0.15, 0), 0.8, Enum.KeyCode.F
 CreateCustomButton("Num5", "5", UDim2.new(1, -90, 0.15, 0), 0.8, Enum.KeyCode.Five)
 CreateCustomButton("Num6", "6", UDim2.new(1, -50, 0.15, 0), 0.8, Enum.KeyCode.Six)
 
--- Phím Q, W, E, F, G
 CreateCustomButton("Q", "Q", UDim2.new(1, -250, 0.24, 0), 0.8, Enum.KeyCode.Q)
 CreateCustomButton("W", "W", UDim2.new(1, -210, 0.24, 0), 0.8, Enum.KeyCode.W)
 CreateCustomButton("E", "E", UDim2.new(1, -170, 0.24, 0), 0.8, Enum.KeyCode.E)
-CreateCustomButton("F", "F", UDim2.new(1, -130, 0.24, 0), 0.8, Enum.KeyCode.F) -- Thêm phím F
+CreateCustomButton("F", "F", UDim2.new(1, -130, 0.24, 0), 0.8, Enum.KeyCode.F)
 CreateCustomButton("G", "G", UDim2.new(1, -90, 0.24, 0), 0.8, Enum.KeyCode.G)
 
--- Các phím chạy góc chéo (WA, WD, SA, SD)
-CreateCustomButton("WA", "WA", UDim2.new(1, -215, 0.32, 1), 1, {Enum.KeyCode.W, Enum.KeyCode.A})
-CreateCustomButton("WD", "WD", UDim2.new(1, -125, 0.32, 1), 1, {Enum.KeyCode.W, Enum.KeyCode.D})
+CreateCustomButton("WA", "WA", UDim2.new(1, -215, 0.32, 0), 1, {Enum.KeyCode.W, Enum.KeyCode.A})
+CreateCustomButton("WD", "WD", UDim2.new(1, -125, 0.32, 0), 1, {Enum.KeyCode.W, Enum.KeyCode.D})
 
--- Cụm A, S, D
 CreateCustomButton("A", "A", UDim2.new(1, -215, 0.40, 0), 1, Enum.KeyCode.A)
 CreateCustomButton("S", "S", UDim2.new(1, -170, 0.40, 0), 1, Enum.KeyCode.S)
 CreateCustomButton("D", "D", UDim2.new(1, -125, 0.40, 0), 1, Enum.KeyCode.D)
 
--- Các phím chéo lùi SA, SD
 CreateCustomButton("SA", "SA", UDim2.new(1, -215, 0.48, 0), 1, {Enum.KeyCode.S, Enum.KeyCode.A})
 CreateCustomButton("SD", "SD", UDim2.new(1, -125, 0.48, 0), 1, {Enum.KeyCode.S, Enum.KeyCode.D})
 
--- Phím Ctrl (Giữ) & Space
 CreateCustomButton("Ctrl", "Ctrl", UDim2.new(1, -215, 0.56, 0), 1.2, Enum.KeyCode.LeftControl)
 CreateCustomButton("Space", "Space", UDim2.new(1, -145, 0.56, 0), 2.2, Enum.KeyCode.Space)
 
@@ -179,6 +235,10 @@ local function UpdateButtonStyles()
         end
     end
 end
+
+-- Tải lại vị trí đã lưu trước đó
+LoadKeypadConfig()
+UpdateButtonStyles()
 
 -------------------------------------------------
 -- KHỞI TẠO RAYFIELD GUI
@@ -262,9 +322,9 @@ MainTab:CreateButton({
 })
 
 -------------------------------------------------
--- MỤC 2: TÙY CHỈNH TỪNG NÚT & DI CHUYỂN
+-- MỤC 2: TÙY CHỈNH TỪNG NÚT & LƯU CONFIG
 -------------------------------------------------
-MainTab:CreateSection("Tùy Chỉnh Phím Ảo (F, Q, E, WASD, Ctrl, G)")
+MainTab:CreateSection("Tùy Chỉnh Phím Ảo (Tự Động Lưu Vị Trí)")
 
 MainTab:CreateToggle({
    Name = "⌨️ Hiện Bảng Phím Ảo",
@@ -284,9 +344,10 @@ MainTab:CreateToggle({
        PlayClick()
        IsEditingLayout = Value
        if Value then
-           Rayfield:Notify({ Title = "Chỉnh vị trí", Content = "Đã BẬT: Hãy dùng tay kéo từng nút đến vị trí bạn muốn!", Duration = 3 })
+           Rayfield:Notify({ Title = "Chỉnh vị trí", Content = "Đã BẬT: Hãy dùng tay kéo từng nút đến vị trí mong muốn!", Duration = 3 })
        else
-           Rayfield:Notify({ Title = "Chỉnh vị trí", Content = "Đã TẮT: Phím đã sẵn sàng sử dụng.", Duration = 2 })
+           SaveKeypadConfig()
+           Rayfield:Notify({ Title = "Chỉnh vị trí", Content = "Đã TẮT: Đã lưu vị trí thành công.", Duration = 2 })
        end
    end,
 })
@@ -294,7 +355,7 @@ MainTab:CreateToggle({
 MainTab:CreateDropdown({
    Name = "📐 Hình Dáng Phím",
    Options = {"Bo Tròn (Rounded)", "Hình Vuông (Square)", "Hình Tròn (Circle)"},
-   CurrentOption = "Bo Tròn (Rounded)",
+   CurrentOption = CurrentShape == "Square" and "Hình Vuông (Square)" or (CurrentShape == "Circle" and "Hình Tròn (Circle)" or "Bo Tròn (Rounded)"),
    Flag = "KeyShapeDropdown",
    Callback = function(Option)
        PlayClick()
@@ -306,6 +367,7 @@ MainTab:CreateDropdown({
            CurrentShape = "Rounded"
        end
        UpdateButtonStyles()
+       SaveKeypadConfig()
    end,
 })
 
@@ -314,11 +376,20 @@ MainTab:CreateSlider({
    Range = {25, 55},
    Increment = 1,
    Suffix = " px",
-   CurrentValue = 35,
+   CurrentValue = BaseButtonSize,
    Flag = "KeySizeSlider",
    Callback = function(Value)
        BaseButtonSize = Value
        UpdateButtonStyles()
+       SaveKeypadConfig()
+   end,
+})
+
+MainTab:CreateButton({
+   Name = "💾 Lưu Vị Trí Phím Thủ Công",
+   Callback = function()
+       PlayClick()
+       SaveKeypadConfig()
    end,
 })
 
@@ -389,7 +460,7 @@ MainTab:CreateToggle({
        BhopEnabled = Value
        
        if BhopEnabled then
-           BhopConnection = RunService.Heartbeat:Connect(function(value)
+           BhopConnection = RunService.Heartbeat:Connect(function()
                if BhopEnabled then
                    local char = LocalPlayer.Character
                    if char then
