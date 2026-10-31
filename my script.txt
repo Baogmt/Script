@@ -1,0 +1,311 @@
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+local SoundService = game:GetService("SoundService")
+local VirtualInputManager = game:GetService("VirtualInputManager")
+local Players = game:GetService("Players")
+local CoreGui = game:GetService("CoreGui")
+
+-------------------------------------------------
+-- HỆ THỐNG ÂM THANH (CLICK SOUND)
+-------------------------------------------------
+local clickSound = Instance.new("Sound")
+clickSound.Name = "MenuClickSound"
+clickSound.SoundId = "rbxassetid://6895079853"
+clickSound.Volume = 0.5
+clickSound.Parent = SoundService
+
+local function PlayClick()
+    clickSound:Play()
+end
+
+-------------------------------------------------
+-- TẠO BẢNG PHÍM ẢO (WASD, SPACE, CTRL, G)
+-------------------------------------------------
+-- Kiểm tra và xóa UI cũ nếu chạy lại script
+if CoreGui:FindFirstChild("VirtualKeypadGui") then
+    CoreGui.VirtualKeypadGui:Destroy()
+end
+
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "VirtualKeypadGui"
+ScreenGui.Parent = CoreGui
+ScreenGui.Enabled = false -- Mặc định ẩn, chỉ hiện sau khi nhập đúng key
+
+-- Khung chứa các nút điều khiển góc phải màn hình
+local KeypadFrame = Instance.new("Frame")
+KeypadFrame.Name = "KeypadFrame"
+KeypadFrame.Size = UDim2.new(0, 160, 0, 160)
+KeypadFrame.Position = UDim2.new(1, -180, 0.4, 0) -- Nằm ở giữa bên phải
+KeypadFrame.BackgroundTransparency = 1
+KeypadFrame.Parent = ScreenGui
+
+-- Hàm tạo phím ảo dùng chung
+local function CreateVirtualKey(name, text, size, position, keyCode)
+    local btn = Instance.new("TextButton")
+    btn.Name = name
+    btn.Size = size
+    btn.Position = position
+    btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    btn.BorderColor3 = Color3.fromRGB(0, 170, 255)
+    btn.BorderSizePixel = 2
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.TextSize = 16
+    btn.Font = Enum.Font.SourceSansBold
+    btn.Text = text
+    btn.Parent = KeypadFrame
+
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 8)
+    corner.Parent = btn
+
+    -- Xử lý sự kiện nhấn giữ/nhả phím
+    btn.MouseButton1Down:Connect(function()
+        PlayClick()
+        btn.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+        VirtualInputManager:SendKeyEvent(true, keyCode, false, game)
+    end)
+
+    btn.MouseButton1Up:Connect(function()
+        btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+        VirtualInputManager:SendKeyEvent(false, keyCode, false, game)
+    end)
+    
+    btn.MouseLeave:Connect(function()
+        btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+        VirtualInputManager:SendKeyEvent(false, keyCode, false, game)
+    end)
+
+    return btn
+end
+
+-- Tạo các phím WASD dạng D-Pad
+CreateVirtualKey("W_Btn", "W", UDim2.new(0, 40, 0, 40), UDim2.new(0, 45, 0, 0), Enum.KeyCode.W)
+CreateVirtualKey("A_Btn", "A", UDim2.new(0, 40, 0, 40), UDim2.new(0, 0, 0, 45), Enum.KeyCode.A)
+CreateVirtualKey("S_Btn", "S", UDim2.new(0, 40, 0, 40), UDim2.new(0, 45, 0, 45), Enum.KeyCode.S)
+CreateVirtualKey("D_Btn", "D", UDim2.new(0, 40, 0, 40), UDim2.new(0, 90, 0, 45), Enum.KeyCode.D)
+
+-- Tạo các phím bổ trợ (Space, Ctrl, G) ở hàng dưới
+CreateVirtualKey("Ctrl_Btn", "Ctrl", UDim2.new(0, 45, 0, 35), UDim2.new(0, 0, 0, 95), Enum.KeyCode.LeftControl)
+CreateVirtualKey("Space_Btn", "Space", UDim2.new(0, 60, 0, 35), UDim2.new(0, 50, 0, 95), Enum.KeyCode.Space)
+CreateVirtualKey("G_Btn", "G", UDim2.new(0, 40, 0, 35), UDim2.new(0, 115, 0, 95), Enum.KeyCode.G)
+
+-------------------------------------------------
+-- KHỞI TẠO RAYFIELD GUI
+-------------------------------------------------
+local Window = Rayfield:CreateWindow({
+   Name = "⚡ Super Fix Lag & Utilities",
+   LoadingTitle = "Đang tải Giao Diện...",
+   LoadingSubtitle = "by Roblox Studio",
+   ConfigurationSaving = {
+      Enabled = true,
+      FolderName = "FixLagConfig",
+      FileName = "ConfigMenu"
+   },
+   Discord = { Enabled = false },
+   KeySystem = true,
+   KeySettings = {
+      Title = "Nhập Key Để Sử Dụng",
+      Subtitle = "Hệ thống bảo vệ Script",
+      Note = "Key của bạn là: freekey", 
+      FileName = "FixLagKey", 
+      SaveKey = true,
+      GrabKeyFromSite = false,
+      Key = {"freekey"}
+   }
+})
+
+-- Khi nhập đúng Key và menu mở ra, sẽ bật hiện bảng phím ảo
+task.spawn(function()
+    repeat task.wait() until Window and Window.Enabled
+    ScreenGui.Enabled = true
+end)
+
+local MainTab = Window:CreateTab("Main", 4483362458)
+
+-------------------------------------------------
+-- MỤC 1: CÁC NÚT FIX LAG
+-------------------------------------------------
+MainTab:CreateSection("Tối Ưu Đồ Họa (Fix Lag)")
+
+-- Nút 10%
+MainTab:CreateButton({
+   Name = "🔧 Fix Lag 10% (Chỉ tắt bóng đổ)",
+   Callback = function()
+       PlayClick()
+       game:GetService("Lighting").GlobalShadows = false
+       Rayfield:Notify({ Title = "10%", Content = "Đã tắt bóng đổ.", Duration = 2 })
+   end,
+})
+
+-- Nút 50%
+MainTab:CreateButton({
+   Name = "⚙️ Fix Lag 50% (Tắt hiệu ứng & hạt)",
+   Callback = function()
+       PlayClick()
+       game:GetService("Lighting").GlobalShadows = false
+       for _, v in pairs(workspace:GetDescendants()) do
+           if v:IsA("ParticleEmitter") or v:IsA("Smoke") or v:IsA("Fire") or v:IsA("Sparkles") then
+               v.Enabled = false
+           end
+       end
+       Rayfield:Notify({ Title = "50%", Content = "Đã tắt hiệu ứng và hạt.", Duration = 2 })
+   end,
+})
+
+-- Nút 99%
+MainTab:CreateButton({
+   Name = "🚀 Fix Lag 99% (Tối ưu toàn diện - Nhựa hóa)",
+   Callback = function()
+       PlayClick()
+       local Lighting = game:GetService("Lighting")
+       Lighting.GlobalShadows = false
+       Lighting.FogEnd = 9e9
+       for _, v in pairs(Lighting:GetChildren()) do
+           if v:IsA("PostEffect") then v.Enabled = false end
+       end
+       
+       for _, v in pairs(workspace:GetDescendants()) do
+           if v:IsA("BasePart") and not v:IsA("MeshPart") then
+               v.Material = Enum.Material.SmoothPlastic
+               v.Reflectance = 0
+           elseif v:IsA("Decal") or v:IsA("Texture") then
+               v:Destroy()
+           elseif v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Smoke") or v:IsA("Fire") then
+               v:Destroy()
+           end
+       end
+       
+       Rayfield:Notify({ Title = "99%", Content = "Đã tối ưu hóa tối đa đồ họa.", Duration = 3 })
+   end,
+})
+
+-------------------------------------------------
+-- MỤC 2: HOLD JUMP, BHOP & BẢNG PHÍM ẢO
+-------------------------------------------------
+MainTab:CreateSection("Tính Năng Hỗ Trợ & Di Chuyển")
+
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local LocalPlayer = game:GetService("Players").LocalPlayer
+
+-- Bật/Tắt hiển thị bảng phím ảo qua Menu Rayfield
+MainTab:CreateToggle({
+   Name = "⌨️ Hiện Bảng Phím Ảo (WASD, Space, Ctrl, G)",
+   CurrentValue = true,
+   Flag = "ToggleVirtualKeypad",
+   Callback = function(Value)
+       PlayClick()
+       ScreenGui.Enabled = Value
+   end,
+})
+
+-- Hold Jump
+local HoldJumpEnabled = false
+local IsJumpingKeyHeld = false
+local HoldJumpHeartbeat = nil
+local InputBeganConnection = nil
+local InputEndedConnection = nil
+
+MainTab:CreateToggle({
+   Name = "🦘 Hold Jump (Tự nhảy lại khi đáp đất)",
+   CurrentValue = false,
+   Flag = "HoldJumpToggle",
+   Callback = function(Value)
+       PlayClick()
+       HoldJumpEnabled = Value
+       
+       if HoldJumpEnabled then
+           InputBeganConnection = UserInputService.InputBegan:Connect(function(input, gameProcessed)
+               if not gameProcessed and (input.KeyCode == Enum.KeyCode.Space or input.UserInputType == Enum.UserInputType.Touch) then
+                   IsJumpingKeyHeld = true
+               end
+           end)
+           
+           InputEndedConnection = UserInputService.InputEnded:Connect(function(input)
+               if input.KeyCode == Enum.KeyCode.Space or input.UserInputType == Enum.UserInputType.Touch then
+                   IsJumpingKeyHeld = false
+               end
+           end)
+           
+           HoldJumpHeartbeat = RunService.Heartbeat:Connect(function()
+               if HoldJumpEnabled and IsJumpingKeyHeld then
+                   local char = LocalPlayer.Character
+                   if char then
+                       local humanoid = char:FindFirstChildOfClass("Humanoid")
+                       if humanoid and humanoid.FloorMaterial ~= Enum.Material.Air then
+                           humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+                       end
+                   end
+               end
+           end)
+           Rayfield:Notify({ Title = "Hold Jump", Content = "Đã BẬT Hold Jump.", Duration = 2 })
+       else
+           IsJumpingKeyHeld = false
+           if HoldJumpHeartbeat then HoldJumpHeartbeat:Disconnect() HoldJumpHeartbeat = nil end
+           if InputBeganConnection then InputBeganConnection:Disconnect() InputBeganConnection = nil end
+           if InputEndedConnection then InputEndedConnection:Disconnect() InputEndedConnection = nil end
+           Rayfield:Notify({ Title = "Hold Jump", Content = "Đã TẮT Hold Jump.", Duration = 2 })
+       end
+   end,
+})
+
+-- Bunny Hop (Bhop)
+local BhopEnabled = false
+local BhopSpeed = 24
+local BhopConnection = nil
+
+MainTab:CreateToggle({
+   Name = "🐰 Bunny Hop (Bhop gia tốc di chuyển)",
+   CurrentValue = false,
+   Flag = "BhopToggle",
+   Callback = function(Value)
+       PlayClick()
+       BhopEnabled = Value
+       
+       if BhopEnabled then
+           BhopConnection = RunService.Heartbeat:Connect(function()
+               if BhopEnabled then
+                   local char = LocalPlayer.Character
+                   if char then
+                       local humanoid = char:FindFirstChildOfClass("Humanoid")
+                       local hrp = char:FindFirstChild("HumanoidRootPart")
+                       
+                       if humanoid and hrp then
+                           if humanoid.FloorMaterial ~= Enum.Material.Air and humanoid.MoveDirection.Magnitude > 0 then
+                               humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+                           end
+                           
+                           if humanoid.MoveDirection.Magnitude > 0 then
+                               local moveDir = humanoid.MoveDirection
+                               hrp.AssemblyLinearVelocity = Vector3.new(
+                                   moveDir.X * BhopSpeed,
+                                   hrp.AssemblyLinearVelocity.Y,
+                                   moveDir.Z * BhopSpeed
+                               )
+                           end
+                       end
+                   end
+               end
+           end)
+           Rayfield:Notify({ Title = "Bhop", Content = "Đã BẬT Bunny Hop.", Duration = 2 })
+       else
+           if BhopConnection then
+               BhopConnection:Disconnect()
+               BhopConnection = nil
+           end
+           Rayfield:Notify({ Title = "Bhop", Content = "Đã TẮT Bunny Hop.", Duration = 2 })
+       end
+   end,
+})
+
+-- Slider Tốc độ Bhop
+MainTab:CreateSlider({
+   Name = "⚡ Tốc Độ Bhop",
+   Range = {16, 100},
+   Increment = 1,
+   Suffix = " Speed",
+   CurrentValue = 24,
+   Flag = "BhopSpeedSlider",
+   Callback = function(Value)
+       BhopSpeed = Value
+   end,
+})
