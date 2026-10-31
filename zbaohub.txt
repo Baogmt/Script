@@ -59,7 +59,7 @@ local function CreateCustomButton(name, text, defaultPos, widthMult, keyCode)
 
     local isDown = false
 
-    -- Xử lý nhấn phím (Không chặn xoay camera)
+    -- Xử lý nhấn/giữ phím (Không chặn xoay camera)
     btn.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             if IsEditingLayout then return end
@@ -124,7 +124,7 @@ local function CreateCustomButton(name, text, defaultPos, widthMult, keyCode)
     return keyData
 end
 
--- 📌 TẠO CÁC NÚT (Không có phím F)
+-- 📌 TẠO CÁC NÚT TRÊN MÀN HÌNH
 -- Hàng phím Số (1 - 6)
 CreateCustomButton("Num1", "1", UDim2.new(1, -250, 0.2, 0), 0.8, Enum.KeyCode.One)
 CreateCustomButton("Num2", "2", UDim2.new(1, -210, 0.2, 0), 0.8, Enum.KeyCode.Two)
@@ -133,14 +133,15 @@ CreateCustomButton("Num4", "4", UDim2.new(1, -130, 0.2, 0), 0.8, Enum.KeyCode.Fo
 CreateCustomButton("Num5", "5", UDim2.new(1, -90, 0.2, 0), 0.8, Enum.KeyCode.Five)
 CreateCustomButton("Num6", "6", UDim2.new(1, -50, 0.2, 0), 0.8, Enum.KeyCode.Six)
 
--- Cụm WASD & G
+-- Cụm WASD, G & Thêm phím R (Dạng giữ)
 CreateCustomButton("W", "W", UDim2.new(1, -170, 0.30, 0), 1, Enum.KeyCode.W)
 CreateCustomButton("A", "A", UDim2.new(1, -215, 0.38, 0), 1, Enum.KeyCode.A)
 CreateCustomButton("S", "S", UDim2.new(1, -170, 0.38, 0), 1, Enum.KeyCode.S)
 CreateCustomButton("D", "D", UDim2.new(1, -125, 0.38, 0), 1, Enum.KeyCode.D)
 CreateCustomButton("G", "G", UDim2.new(1, -75, 0.38, 0), 1, Enum.KeyCode.G)
+CreateCustomButton("R", "R", UDim2.new(1, -75, 0.30, 0), 1, Enum.KeyCode.R) -- Phím R dạng giữ mới thêm
 
--- Phím Ctrl & Space
+-- Phím Ctrl (Giữ) & Space
 CreateCustomButton("Ctrl", "Ctrl", UDim2.new(1, -215, 0.46, 0), 1.2, Enum.KeyCode.LeftControl)
 CreateCustomButton("Space", "Space", UDim2.new(1, -145, 0.46, 0), 2.2, Enum.KeyCode.Space)
 
@@ -241,7 +242,7 @@ MainTab:CreateButton({
 -------------------------------------------------
 -- MỤC 2: TÙY CHỈNH TỪNG NÚT & DI CHUYỂN
 -------------------------------------------------
-MainTab:CreateSection("Tùy Chỉnh Phím Ảo (1-6, WASD, Ctrl, G)")
+MainTab:CreateSection("Tùy Chỉnh Phím Ảo (1-6, WASD, Ctrl, R, G)")
 
 MainTab:CreateToggle({
    Name = "⌨️ Hiện Bảng Phím Ảo",
