@@ -1,9 +1,17 @@
-local success, Rayfield = pcall(function()
-    return loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+local Rayfield = nil
+local success, err = pcall(function()
+    Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 end)
 
 if not success or not Rayfield then
-    warn("Không thể tải thư viện Rayfield!")
+    -- Link dự phòng nếu link chính bị lỗi mạng
+    success, err = pcall(function()
+        Rayfield = loadstring(game:HttpGet('https://raw.githubusercontent.com/sirius-dev/rayfield-ui/main/source.lua'))()
+    end)
+end
+
+if not success or not Rayfield then
+    warn("Không thể tải thư viện Rayfield! Vui lòng kiểm tra lại Executor hoặc kết nối mạng.")
     return
 end
 
@@ -11,7 +19,6 @@ local SoundService = game:GetService("SoundService")
 local VirtualInputManager = game:GetService("VirtualInputManager")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
-local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local CoreGui = game:GetService("CoreGui")
 local Lighting = game:GetService("Lighting")
@@ -19,7 +26,7 @@ local Lighting = game:GetService("Lighting")
 local LocalPlayer = Players.LocalPlayer
 
 -------------------------------------------------
--- HỆ THỐNG ÂM THANH (CLICK SOUND - TĂNG 3X ÂM LƯỢNG)
+-- HỆ THỐNG ÂM THANH (CLICK SOUND - 3X)
 -------------------------------------------------
 local clickSound = Instance.new("Sound")
 clickSound.Name = "MenuClickSound"
@@ -42,7 +49,7 @@ backgroundMusic.Looped = true
 backgroundMusic.Parent = SoundService
 
 -------------------------------------------------
--- HỆ THỐNG PHÍM ẢO & QUẢN LÝ VỊ TRÍ
+-- HỆ THỐNG PHÍM ẢO AN TOÀN
 -------------------------------------------------
 if CoreGui:FindFirstChild("VirtualKeypadGui") then
     CoreGui.VirtualKeypadGui:Destroy()
@@ -59,7 +66,6 @@ local RegisteredKeysByName = {}
 local CurrentShape = "Rounded"
 local BaseButtonSize = 35
 
--- Sử dụng Rayfield Flags để lưu vị trí tự động chuẩn xác không lỗi file
 local function SaveKeypadConfigToRayfield()
     pcall(function()
         for name, data in pairs(RegisteredKeysByName) do
@@ -112,7 +118,7 @@ local function CreateCustomButton(name, text, defaultPos, widthMult, keyCodes, i
     local isActive = false
     local keys = typeof(keyCodes) == "table" and keyCodes or {keyCodes}
 
-    -- Hiệu ứng màu Cầu Vồng (Rainbow Effect)
+    -- Hiệu ứng cầu vồng
     task.spawn(function()
         while true do
             if isActive then
