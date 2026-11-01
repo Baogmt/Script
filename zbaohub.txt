@@ -16,7 +16,7 @@ local CONFIG_FILE_NAME = "VirtualKeypadPositions.json"
 local clickSound = Instance.new("Sound")
 clickSound.Name = "MenuClickSound"
 clickSound.SoundId = "rbxassetid://6895079853"
-clickSound.Volume = 1.0 -- Đã tăng âm lượng to hơn rõ ràng
+clickSound.Volume = 1.5 -- Âm lượng cực lớn và rõ
 clickSound.Parent = SoundService
 
 local function PlayClick()
@@ -24,7 +24,7 @@ local function PlayClick()
 end
 
 -------------------------------------------------
--- HỆ THỐNG PHÍM ẢO & HỆ THỐNG LƯU SETTING (SAVE/LOAD)
+-- HỆ THỐNG KEYSTROKES & PHÍM ẢO (SAVE/LOAD)
 -------------------------------------------------
 if CoreGui:FindFirstChild("VirtualKeypadGui") then
     CoreGui.VirtualKeypadGui:Destroy()
@@ -93,8 +93,8 @@ local function LoadKeypadConfig()
     end
 end
 
--- Hàm tạo phím ảo
-local function CreateCustomButton(name, text, defaultPos, widthMult, keyCodes, isToggle, isMouseToggle)
+-- Hàm tạo phím Keystrokes (Hiệu ứng màu cầu vồng khi nhấn)
+local function CreateCustomButton(name, text, defaultPos, widthMult, keyCodes, isToggle)
     local btn = Instance.new("TextButton")
     btn.Name = name
     btn.Size = UDim2.new(0, BaseButtonSize * widthMult, 0, BaseButtonSize)
@@ -116,112 +116,37 @@ local function CreateCustomButton(name, text, defaultPos, widthMult, keyCodes, i
 
     local isDown = false
     local toggleState = false
+    local isActive = false
     local keys = typeof(keyCodes) == "table" and keyCodes or {keyCodes}
 
-    if isMouseToggle then
-        btn.MouseButton1Click:Connect(function()
-            if IsEditingLayout then return end
-            PlayClick()
-            toggleState = not toggleState
-            
-            local lmbBtn = ScreenGui:FindFirstChild("MouseLMB")
-            local rmbBtn = ScreenGui:FindFirstChild("MouseRMB")
-            local cursorIcon = ScreenGui:FindFirstChild("FakeCursorIcon")
-
-            if toggleState then
-                btn.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+    -- Vòng lặp tạo hiệu ứng màu Cầu Vồng (Rainbow) mượt mà khi nút đang sáng
+    task.spawn(function()
+        while true do
+            if isActive then
+                local hue = (tick() % 5) / 5 -- Chu kỳ đổi màu 5 giây
+                btn.BackgroundColor3 = Color3.fromHSV(hue, 1, 1)
                 btn.BackgroundTransparency = 0.1
-                
-                if not cursorIcon then
-                    cursorIcon = Instance.new("Frame")
-                    cursorIcon.Name = "FakeCursorIcon"
-                    cursorIcon.Size = UDim2.new(0, 12, 0, 12)
-                    cursorIcon.AnchorPoint = Vector2.new(0.5, 0.5)
-                    cursorIcon.Position = UDim2.new(0.5, 0, 0.5, 0)
-                    cursorIcon.BackgroundColor3 = Color3.fromRGB(255, 255, 0)
-                    cursorIcon.BorderSizePixel = 1
-                    cursorIcon.Parent = ScreenGui
-                    local c = Instance.new("UICorner")
-                    c.CornerRadius = UDim.new(1, 0)
-                    c.Parent = cursorIcon
-                end
-                cursorIcon.Visible = true
-
-                if not lmbBtn then
-                    local lb = Instance.new("TextButton")
-                    lb.Name = "MouseLMB"
-                    lb.Size = UDim2.new(0, 45, 0, 45)
-                    lb.Position = UDim2.new(0.5, -60, 0.5, 20)
-                    lb.BackgroundColor3 = Color3.fromRGB(0, 120, 255)
-                    lb.BackgroundTransparency = 0.3
-                    lb.TextColor3 = Color3.fromRGB(255, 255, 255)
-                    lb.TextSize = 11
-                    lb.Font = Enum.Font.SourceSansBold
-                    lb.Text = "L-Click"
-                    lb.Parent = ScreenGui
-                    local cornerL = Instance.new("UICorner") cornerL.CornerRadius = UDim.new(0.5, 0) cornerL.Parent = lb
-                    
-                    lb.MouseButton1Down:Connect(function()
-                        PlayClick()
-                        VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 0)
-                    end)
-                    lb.MouseButton1Up:Connect(function()
-                        VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 0)
-                    end)
-                else
-                    lmbBtn.Visible = true
-                end
-
-                if not rmbBtn then
-                    local rb = Instance.new("TextButton")
-                    rb.Name = "MouseRMB"
-                    rb.Size = UDim2.new(0, 45, 0, 45)
-                    rb.Position = UDim2.new(0.5, 15, 0.5, 20)
-                    rb.BackgroundColor3 = Color3.fromRGB(255, 80, 80)
-                    rb.BackgroundTransparency = 0.3
-                    rb.TextColor3 = Color3.fromRGB(255, 255, 255)
-                    rb.TextSize = 11
-                    rb.Font = Enum.Font.SourceSansBold
-                    rb.Text = "R-Click"
-                    rb.Parent = ScreenGui
-                    local cornerR = Instance.new("UICorner") cornerR.CornerRadius = UDim.new(0.5, 0) cornerR.Parent = rb
-                    
-                    rb.MouseButton1Down:Connect(function()
-                        PlayClick()
-                        VirtualInputManager:SendMouseButtonEvent(0, 0, 1, true, game, 0)
-                    end)
-                    rb.MouseButton1Up:Connect(function()
-                        VirtualInputManager:SendMouseButtonEvent(0, 0, 1, false, game, 0)
-                    end)
-                else
-                    rmbBtn.Visible = true
-                end
-            else
-                btn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-                btn.BackgroundTransparency = 0.4
-                if cursorIcon then cursorIcon.Visible = false end
-                if lmbBtn then lmbBtn.Visible = false end
-                if rmbBtn then rmbBtn.Visible = false end
             end
-        end)
-    elseif isToggle then
+            task.wait(0.03)
+        end
+    end)
+
+    local function SetVisualState(active)
+        isActive = active
+        if not active then
+            btn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+            btn.BackgroundTransparency = 0.4
+        end
+    end
+
+    if isToggle then
         btn.MouseButton1Click:Connect(function()
             if IsEditingLayout then return end
             PlayClick()
             toggleState = not toggleState
-            
-            if toggleState then
-                btn.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
-                btn.BackgroundTransparency = 0.1
-                for _, k in ipairs(keys) do
-                    VirtualInputManager:SendKeyEvent(true, k, false, game)
-                end
-            else
-                btn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-                btn.BackgroundTransparency = 0.4
-                for _, k in ipairs(keys) do
-                    VirtualInputManager:SendKeyEvent(false, k, false, game)
-                end
+            SetVisualState(toggleState)
+            for _, k in ipairs(keys) do
+                VirtualInputManager:SendKeyEvent(toggleState, k, false, game)
             end
         end)
     else
@@ -230,8 +155,7 @@ local function CreateCustomButton(name, text, defaultPos, widthMult, keyCodes, i
                 if IsEditingLayout then return end
                 isDown = true
                 PlayClick()
-                btn.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
-                btn.BackgroundTransparency = 0.1
+                SetVisualState(true)
                 for _, k in ipairs(keys) do
                     VirtualInputManager:SendKeyEvent(true, k, false, game)
                 end
@@ -242,11 +166,30 @@ local function CreateCustomButton(name, text, defaultPos, widthMult, keyCodes, i
             if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
                 if isDown then
                     isDown = false
-                    btn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-                    btn.BackgroundTransparency = 0.4
+                    SetVisualState(false)
                     for _, k in ipairs(keys) do
                         VirtualInputManager:SendKeyEvent(false, k, false, game)
                     end
+                end
+            end)
+        end)
+    end
+
+    if #keys > 0 then
+        UserInputService.InputBegan:Connect(function(input, gameProcessed)
+            if not gameProcessed then
+                for _, k in ipairs(keys) do
+                    if input.KeyCode == k then
+                        SetVisualState(true)
+                    end
+                end
+            end
+        end)
+
+        UserInputService.InputEnded:Connect(function(input)
+            for _, k in ipairs(keys) do
+                if input.KeyCode == k then
+                    SetVisualState(false)
                 end
             end
         end)
@@ -301,7 +244,7 @@ local function CreateCustomButton(name, text, defaultPos, widthMult, keyCodes, i
 end
 
 -------------------------------------------------
--- 📌 TẠO CÁC NÚT TRÊN MÀN HÌNH
+-- 📌 TẠO CÁC NÚT KEYSTROKES TRÊN MÀN HÌNH
 -------------------------------------------------
 CreateCustomButton("Num1", "1", UDim2.new(1, -250, 0.15, 0), 0.8, Enum.KeyCode.One)
 CreateCustomButton("Num2", "2", UDim2.new(1, -210, 0.15, 0), 0.8, Enum.KeyCode.Two)
@@ -315,8 +258,6 @@ CreateCustomButton("W", "W", UDim2.new(1, -210, 0.24, 0), 0.8, Enum.KeyCode.W)
 CreateCustomButton("E", "E", UDim2.new(1, -170, 0.24, 0), 0.8, Enum.KeyCode.E)
 CreateCustomButton("F", "F", UDim2.new(1, -130, 0.24, 0), 0.8, Enum.KeyCode.F)
 CreateCustomButton("G", "G", UDim2.new(1, -90, 0.24, 0), 0.8, Enum.KeyCode.G)
-
-CreateCustomButton("Mouse", "Mouse", UDim2.new(1, -250, 0.32, 0), 1, nil, false, true)
 
 CreateCustomButton("WA", "WA", UDim2.new(1, -210, 0.32, 0), 1, {Enum.KeyCode.W, Enum.KeyCode.A})
 CreateCustomButton("WD", "WD", UDim2.new(1, -125, 0.32, 0), 1, {Enum.KeyCode.W, Enum.KeyCode.D})
@@ -431,10 +372,10 @@ MainTab:CreateButton({
 -------------------------------------------------
 -- MỤC 2: TÙY CHỈNH TỪNG NÚT & LƯU CONFIG
 -------------------------------------------------
-MainTab:CreateSection("Tùy Chỉnh Phím Ảo (Tự Động Lưu Vị Trí)")
+MainTab:CreateSection("Tùy Chỉnh Keystrokes (Tự Động Lưu Vị Trí)")
 
 MainTab:CreateToggle({
-   Name = "⌨️ Hiện Bảng Phím Ảo",
+   Name = "⌨️ Hiện Bảng Keystrokes",
    CurrentValue = true,
    Flag = "ToggleVirtualKeypad",
    Callback = function(Value)
