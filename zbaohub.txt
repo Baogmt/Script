@@ -14,9 +14,10 @@ local RunService = game:GetService("RunService")
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local CoreGui = game:GetService("CoreGui")
+local Lighting = game:GetService("Lighting")
 
 local LocalPlayer = Players.LocalPlayer
-local CONFIG_FILE_NAME = "NewVirtualKeypadConfig_v4.json"
+local CONFIG_FILE_NAME = "NewVirtualKeypadConfig_v5.json"
 
 -------------------------------------------------
 -- HỆ THỐNG ÂM THANH (CLICK SOUND - TĂNG 3X ÂM LƯỢNG)
@@ -30,6 +31,15 @@ clickSound.Parent = SoundService
 local function PlayClick()
     pcall(function() clickSound:Play() end)
 end
+
+-------------------------------------------------
+-- HỆ THỐNG PHÁT NHẠC (CUSTOM MUSIC PLAYER)
+-------------------------------------------------
+local customMusic = Instance.new("Sound")
+customMusic.Name = "CustomBackgroundMusic"
+customMusic.Volume = 1.0
+customMusic.Looped = true
+customMusic.Parent = SoundService
 
 -------------------------------------------------
 -- HỆ THỐNG PHÍM ẢO & LƯU CONFIG
@@ -49,7 +59,6 @@ local RegisteredKeysByName = {}
 local CurrentShape = "Rounded"
 local BaseButtonSize = 35
 
--- Tạo file config mới
 pcall(function()
     if isfile and isfile(CONFIG_FILE_NAME) and delfile then
         delfile(CONFIG_FILE_NAME)
@@ -98,7 +107,6 @@ local function LoadKeypadConfig()
     end)
 end
 
--- Hàm tạo phím với hiệu ứng màu Cầu Vồng khi nhấn
 local function CreateCustomButton(name, text, defaultPos, widthMult, keyCodes, isToggle)
     local btn = Instance.new("TextButton")
     btn.Name = name
@@ -124,7 +132,6 @@ local function CreateCustomButton(name, text, defaultPos, widthMult, keyCodes, i
     local isActive = false
     local keys = typeof(keyCodes) == "table" and keyCodes or {keyCodes}
 
-    -- Vòng lặp đổi màu Cầu Vồng (Rainbow Effect)
     task.spawn(function()
         while true do
             if isActive then
@@ -178,7 +185,7 @@ local function CreateCustomButton(name, text, defaultPos, widthMult, keyCodes, i
                         pcall(function() VirtualInputManager:SendKeyEvent(false, k, false, game) end)
                     end
                 end
-            end
+            end)
         end)
     end
 
@@ -224,7 +231,7 @@ local function CreateCustomButton(name, text, defaultPos, widthMult, keyCodes, i
 end
 
 -------------------------------------------------
--- 📌 TẠO CÁC NÚT PHÍM ẢO TRÊN MÀN HÌNH (ĐÃ THÊM O VÀ I)
+-- 📌 TẠO CÁC NÚT PHÍM ẢO TRÊN MÀN HÌNH
 -------------------------------------------------
 CreateCustomButton("Num1", "1", UDim2.new(1, -290, 0.15, 0), 0.8, Enum.KeyCode.One)
 CreateCustomButton("Num2", "2", UDim2.new(1, -250, 0.15, 0), 0.8, Enum.KeyCode.Two)
@@ -233,7 +240,6 @@ CreateCustomButton("Num4", "4", UDim2.new(1, -170, 0.15, 0), 0.8, Enum.KeyCode.F
 CreateCustomButton("Num5", "5", UDim2.new(1, -130, 0.15, 0), 0.8, Enum.KeyCode.Five)
 CreateCustomButton("Num6", "6", UDim2.new(1, -90, 0.15, 0), 0.8, Enum.KeyCode.Six)
 
--- Hàng Q, E, F, G, O, I
 CreateCustomButton("Q", "Q", UDim2.new(1, -290, 0.24, 0), 0.8, Enum.KeyCode.Q)
 CreateCustomButton("E", "E", UDim2.new(1, -250, 0.24, 0), 0.8, Enum.KeyCode.E)
 CreateCustomButton("F", "F", UDim2.new(1, -210, 0.24, 0), 0.8, Enum.KeyCode.F)
@@ -241,7 +247,6 @@ CreateCustomButton("G", "G", UDim2.new(1, -170, 0.24, 0), 0.8, Enum.KeyCode.G)
 CreateCustomButton("O", "O", UDim2.new(1, -130, 0.24, 0), 0.8, Enum.KeyCode.O)
 CreateCustomButton("I", "I", UDim2.new(1, -90, 0.24, 0), 0.8, Enum.KeyCode.I)
 
--- Cụm di chuyển đầy đủ (W, A, S, D và các phím chéo)
 CreateCustomButton("WA", "WA", UDim2.new(1, -250, 0.33, 0), 1, {Enum.KeyCode.W, Enum.KeyCode.A})
 CreateCustomButton("W",  "W",  UDim2.new(1, -210, 0.33, 0), 1, Enum.KeyCode.W)
 CreateCustomButton("WD", "WD", UDim2.new(1, -170, 0.33, 0), 1, {Enum.KeyCode.W, Enum.KeyCode.D})
@@ -301,15 +306,15 @@ end)
 local MainTab = Window:CreateTab("Main", 4483362458)
 
 -------------------------------------------------
--- MỤC 1: FIX LAG
+-- MỤC 1: FIX LAG & MÔI TRƯỜNG (NO FOG & FULL BRIGHT)
 -------------------------------------------------
-MainTab:CreateSection("Tối Ưu Đồ Họa (Fix Lag)")
+MainTab:CreateSection("Tối Ưu Đồ Họa & Môi Trường")
 
 MainTab:CreateButton({
    Name = "🔧 Fix Lag 10% (Chỉ tắt bóng đổ)",
    Callback = function()
        PlayClick()
-       game:GetService("Lighting").GlobalShadows = false
+       Lighting.GlobalShadows = false
        Rayfield:Notify({ Title = "10%", Content = "Đã tắt bóng đổ.", Duration = 2 })
    end,
 })
@@ -318,7 +323,7 @@ MainTab:CreateButton({
    Name = "⚙️ Fix Lag 50% (Tắt hiệu ứng & hạt)",
    Callback = function()
        PlayClick()
-       game:GetService("Lighting").GlobalShadows = false
+       Lighting.GlobalShadows = false
        for _, v in pairs(workspace:GetDescendants()) do
            if v:IsA("ParticleEmitter") or v:IsA("Smoke") or v:IsA("Fire") or v:IsA("Sparkles") then
                v.Enabled = false
@@ -332,7 +337,6 @@ MainTab:CreateButton({
    Name = "🚀 Fix Lag 99% (Tối ưu toàn diện - Nhựa hóa)",
    Callback = function()
        PlayClick()
-       local Lighting = game:GetService("Lighting")
        Lighting.GlobalShadows = false
        Lighting.FogEnd = 9e9
        for _, v in pairs(Lighting:GetChildren()) do
@@ -353,8 +357,71 @@ MainTab:CreateButton({
    end,
 })
 
+MainTab:CreateButton({
+   Name = "☀️ No Fog & Full Bright (Sáng tối đa, không sương mù)",
+   Callback = function()
+       PlayClick()
+       Lighting.GlobalShadows = false
+       Lighting.FogEnd = 9e9
+       Lighting.Brightness = 2
+       Lighting.ClockTime = 14
+       Lighting.OutdoorAmbient = Color3.fromRGB(255, 255, 255)
+       Lighting.Ambient = Color3.fromRGB(255, 255, 255)
+       
+       for _, v in pairs(Lighting:GetChildren()) do
+           if v:IsA("Atmosphere") then
+               v.Density = 0
+           end
+       end
+       
+       Rayfield:Notify({ Title = "Full Bright", Content = "Đã bật sáng tối đa và xóa sương mù!", Duration = 2 })
+   end,
+})
+
 -------------------------------------------------
--- MỤC 2: TÙY CHỈNH TỪNG NÚT & LƯU CONFIG
+-- MỤC 2: HỆ THỐNG PHÁT NHẠC (MUSIC PLAYER)
+-------------------------------------------------
+MainTab:CreateSection("🎵 Hệ Thống Nghe Nhạc (Music Player)")
+
+MainTab:CreateInput({
+   Name = "🎶 Nhập ID Nhạc (Asset ID)",
+   PlaceholderText = "Ví dụ: 1841314963",
+   RemoveTextAfterFocusLost = false,
+   Callback = function(Text)
+       local audioId = tonumber(Text)
+       if audioId then
+           customMusic.SoundId = "rbxassetid://" .. audioId
+           customMusic:Play()
+           Rayfield:Notify({ Title = "Phát Nhạc", Content = "Đang phát ID: " .. audioId, Duration = 2 })
+       else
+           Rayfield:Notify({ Title = "Lỗi", Content = "Vui lòng nhập đúng dãy số ID nhạc!", Duration = 2 })
+       end
+   end,
+})
+
+MainTab:CreateSlider({
+   Name = "🔊 Âm Lượng Nhạc",
+   Range = {0, 5},
+   Increment = 0.1,
+   Suffix = " Vol",
+   CurrentValue = 1.0,
+   Flag = "MusicVolumeSlider",
+   Callback = function(Value)
+       customMusic.Volume = Value
+   end,
+})
+
+MainTab:CreateButton({
+   Name = "⏹️ Dừng / Tắt Nhạc",
+   Callback = function()
+       PlayClick()
+       customMusic:Stop()
+       Rayfield:Notify({ Title = "Đã Tắt Nhạc", Content = "Đã dừng phát nhạc.", Duration = 2 })
+   end,
+})
+
+-------------------------------------------------
+-- MỤC 3: TÙY CHỈNH PHÍM ẢO & LƯU CONFIG
 -------------------------------------------------
 MainTab:CreateSection("Tùy Chỉnh Phím Ảo (Tự Động Lưu Vị Trí)")
 
@@ -427,7 +494,7 @@ MainTab:CreateButton({
 })
 
 -------------------------------------------------
--- MỤC 3: HOLD JUMP & BHOP
+-- MỤC 4: HOLD JUMP & BHOP
 -------------------------------------------------
 MainTab:CreateSection("Tính Năng Di Chuyển")
 
