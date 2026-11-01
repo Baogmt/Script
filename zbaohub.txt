@@ -174,12 +174,26 @@ ScreenGui.Name = "CustomKeypadGui"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = game:GetService("CoreGui")
 
+-- Hàm tạo hiệu ứng cầu vồng khi bấm/vuốt
+local function PlayRainbowEffect(btn)
+   task.spawn(function()
+      local hue = math.random()
+      for i = 1, 20 do
+         hue = (hue + 0.1) % 1
+         btn.BackgroundColor3 = Color3.fromHSV(hue, 1, 1)
+         task.wait(0.04)
+      end
+      btn.BackgroundColor3 = Color3.fromRGB(35, 35, 35) -- Trả về màu nền mặc định
+   end)
+end
+
 local function CreateDraggableButton(name, size, position, callback)
    local btn = Instance.new("TextButton")
    btn.Name = name .. "Button"
    btn.Size = size
    btn.Position = position
    btn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+   btn.BackgroundTransparency = 0.5 -- Nền trong suốt
    btn.BorderColor3 = Color3.fromRGB(255, 255, 255)
    btn.BorderSizePixel = 1
    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -207,8 +221,19 @@ local function CreateDraggableButton(name, size, position, callback)
                end
             end)
          else
+            PlaySwitchSound()
+            PlayRainbowEffect(btn)
             if callback then callback() end
          end
+      end
+   end)
+
+   -- Hỗ trợ hiệu ứng khi vuốt ngón tay qua các phím khác nhau (Swipe Effect)
+   btn.MouseEnter:Connect(function()
+      if not isDragMode and UserInputService.MouseButton1Pressed then
+         PlaySwitchSound()
+         PlayRainbowEffect(btn)
+         if callback then callback() end
       end
    end)
 
@@ -229,34 +254,32 @@ local function CreateDraggableButton(name, size, position, callback)
    return btn
 end
 
--- Kích thước mặc định 55x55 px cho các nút
-CreateDraggableButton("W", UDim2.new(0, 55, 0, 55), UDim2.new(0.1, 0, 0.4, 0), function() PlaySwitchSound(); PressKey(Enum.KeyCode.W) end)
-CreateDraggableButton("A", UDim2.new(0, 55, 0, 55), UDim2.new(0.05, 0, 0.48, 0), function() PlaySwitchSound(); PressKey(Enum.KeyCode.A) end)
-CreateDraggableButton("S", UDim2.new(0, 55, 0, 55), UDim2.new(0.1, 0, 0.48, 0), function() PlaySwitchSound(); PressKey(Enum.KeyCode.S) end)
-CreateDraggableButton("D", UDim2.new(0, 55, 0, 55), UDim2.new(0.15, 0, 0.48, 0), function() PlaySwitchSound(); PressKey(Enum.KeyCode.D) end)
-CreateDraggableButton("F", UDim2.new(0, 55, 0, 55), UDim2.new(0.20, 0, 0.4, 0), function() PlaySwitchSound(); PressKey(Enum.KeyCode.F) end)
-CreateDraggableButton("Q", UDim2.new(0, 55, 0, 55), UDim2.new(0.05, 0, 0.32, 0), function() PlaySwitchSound(); PressKey(Enum.KeyCode.Q) end)
-CreateDraggableButton("E", UDim2.new(0, 55, 0, 55), UDim2.new(0.15, 0, 0.32, 0), function() PlaySwitchSound(); PressKey(Enum.KeyCode.E) end)
-CreateDraggableButton("O", UDim2.new(0, 55, 0, 55), UDim2.new(0.20, 0, 0.32, 0), function() PlaySwitchSound(); PressKey(Enum.KeyCode.O) end)
-CreateDraggableButton("G", UDim2.new(0, 55, 0, 55), UDim2.new(0.25, 0, 0.4, 0), function() PlaySwitchSound(); PressKey(Enum.KeyCode.G) end)
+-- Kích thước mặc định 55x55 px cho các nút trong suốt
+CreateDraggableButton("W", UDim2.new(0, 55, 0, 55), UDim2.new(0.1, 0, 0.4, 0), function() PressKey(Enum.KeyCode.W) end)
+CreateDraggableButton("A", UDim2.new(0, 55, 0, 55), UDim2.new(0.05, 0, 0.48, 0), function() PressKey(Enum.KeyCode.A) end)
+CreateDraggableButton("S", UDim2.new(0, 55, 0, 55), UDim2.new(0.1, 0, 0.48, 0), function() PressKey(Enum.KeyCode.S) end)
+CreateDraggableButton("D", UDim2.new(0, 55, 0, 55), UDim2.new(0.15, 0, 0.48, 0), function() PressKey(Enum.KeyCode.D) end)
+CreateDraggableButton("F", UDim2.new(0, 55, 0, 55), UDim2.new(0.20, 0, 0.4, 0), function() PressKey(Enum.KeyCode.F) end)
+CreateDraggableButton("Q", UDim2.new(0, 55, 0, 55), UDim2.new(0.05, 0, 0.32, 0), function() PressKey(Enum.KeyCode.Q) end)
+CreateDraggableButton("E", UDim2.new(0, 55, 0, 55), UDim2.new(0.15, 0, 0.32, 0), function() PressKey(Enum.KeyCode.E) end)
+CreateDraggableButton("O", UDim2.new(0, 55, 0, 55), UDim2.new(0.20, 0, 0.32, 0), function() PressKey(Enum.KeyCode.O) end)
+CreateDraggableButton("G", UDim2.new(0, 55, 0, 55), UDim2.new(0.25, 0, 0.4, 0), function() PressKey(Enum.KeyCode.G) end)
 
-CreateDraggableButton("1", UDim2.new(0, 55, 0, 55), UDim2.new(0.30, 0, 0.32, 0), function() PlaySwitchSound(); PressKey(Enum.KeyCode.One) end)
-CreateDraggableButton("2", UDim2.new(0, 55, 0, 55), UDim2.new(0.35, 0, 0.32, 0), function() PlaySwitchSound(); PressKey(Enum.KeyCode.Two) end)
-CreateDraggableButton("3", UDim2.new(0, 55, 0, 55), UDim2.new(0.40, 0, 0.32, 0), function() PlaySwitchSound(); PressKey(Enum.KeyCode.Three) end)
-CreateDraggableButton("4", UDim2.new(0, 55, 0, 55), UDim2.new(0.30, 0, 0.4, 0), function() PlaySwitchSound(); PressKey(Enum.KeyCode.Four) end)
-CreateDraggableButton("5", UDim2.new(0, 55, 0, 55), UDim2.new(0.35, 0, 0.4, 0), function() PlaySwitchSound(); PressKey(Enum.KeyCode.Five) end)
-CreateDraggableButton("6", UDim2.new(0, 55, 0, 55), UDim2.new(0.40, 0, 0.4, 0), function() PlaySwitchSound(); PressKey(Enum.KeyCode.Six) end)
+CreateDraggableButton("1", UDim2.new(0, 55, 0, 55), UDim2.new(0.30, 0, 0.32, 0), function() PressKey(Enum.KeyCode.One) end)
+CreateDraggableButton("2", UDim2.new(0, 55, 0, 55), UDim2.new(0.35, 0, 0.32, 0), function() PressKey(Enum.KeyCode.Two) end)
+CreateDraggableButton("3", UDim2.new(0, 55, 0, 55), UDim2.new(0.40, 0, 0.32, 0), function() PressKey(Enum.KeyCode.Three) end)
+CreateDraggableButton("4", UDim2.new(0, 55, 0, 55), UDim2.new(0.30, 0, 0.4, 0), function() PressKey(Enum.KeyCode.Four) end)
+CreateDraggableButton("5", UDim2.new(0, 55, 0, 55), UDim2.new(0.35, 0, 0.4, 0), function() PressKey(Enum.KeyCode.Five) end)
+CreateDraggableButton("6", UDim2.new(0, 55, 0, 55), UDim2.new(0.40, 0, 0.4, 0), function() PressKey(Enum.KeyCode.Six) end)
 
-CreateDraggableButton("Space", UDim2.new(0, 75, 0, 55), UDim2.new(0.85, 0, 0.48, 0), function() PlaySwitchSound(); PressKey(Enum.KeyCode.Space) end)
+CreateDraggableButton("Space", UDim2.new(0, 75, 0, 55), UDim2.new(0.85, 0, 0.48, 0), function() PressKey(Enum.KeyCode.Space) end)
 
--- Phím Ctrl Trái (Dạng Toggle Giữ/Thả)
+-- Phím Ctrl Trái (Dạng Toggle Giữ/Thả - Đã tắt hoàn toàn thông báo)
 local isHoldingCtrl = false
 local ctrlConnection = nil
 CreateDraggableButton("Ctrl", UDim2.new(0, 55, 0, 55), UDim2.new(0.85, 0, 0.38, 0), function()
-   PlaySwitchSound()
    isHoldingCtrl = not isHoldingCtrl
    if isHoldingCtrl then
-      Rayfield:Notify({ Title = "Ctrl Trái", Content = "Đã BẬT giữ Ctrl liên tục!", Duration = 1.5 })
       ctrlConnection = RunService.RenderStepped:Connect(function()
          VIM:SendKeyEvent(true, Enum.KeyCode.LeftControl, false, game)
       end)
@@ -266,7 +289,6 @@ CreateDraggableButton("Ctrl", UDim2.new(0, 55, 0, 55), UDim2.new(0.85, 0, 0.38, 
          ctrlConnection = nil
       end
       VIM:SendKeyEvent(false, Enum.KeyCode.LeftControl, false, game)
-      Rayfield:Notify({ Title = "Ctrl Trái", Content = "Đã TẮT giữ Ctrl.", Duration = 1.5 })
    end
 end)
 
