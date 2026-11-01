@@ -17,7 +17,7 @@ local CoreGui = game:GetService("CoreGui")
 local Lighting = game:GetService("Lighting")
 
 local LocalPlayer = Players.LocalPlayer
-local CONFIG_FILE_NAME = "CustomKeypadPositions.json"
+local CONFIG_FILE_NAME = "VirtualKeypadPositions.json"
 
 -------------------------------------------------
 -- HỆ THỐNG ÂM THANH (CLICK SOUND - 3X)
@@ -43,7 +43,7 @@ backgroundMusic.Looped = true
 backgroundMusic.Parent = SoundService
 
 -------------------------------------------------
--- HỆ THỐNG PHÍM ẢO & LƯU VỊ TRÍ CHUẨN XÁC
+-- HỆ THỐNG PHÍM ẢO & TỰ ĐỘNG LƯU FILE CONFIG
 -------------------------------------------------
 if CoreGui:FindFirstChild("VirtualKeypadGui") then
     CoreGui.VirtualKeypadGui:Destroy()
@@ -60,37 +60,43 @@ local RegisteredKeysByName = {}
 local CurrentShape = "Rounded"
 local BaseButtonSize = 35
 
--- Hàm lưu vị trí các nút vào file JSON
-local function SavePositionsToFile()
+-- Hàm lưu cấu hình tự động vào file JSON
+local function SaveKeypadConfig()
     pcall(function()
         if writefile and HttpService then
-            local dataToSave = {}
+            local configData = {
+                Shape = CurrentShape,
+                Size = BaseButtonSize,
+                Positions = {}
+            }
             for name, data in pairs(RegisteredKeysByName) do
                 local pos = data.Btn.Position
-                dataToSave[name] = {
-                    XScale = pos.X.Scale,
-                    XOffset = pos.X.Offset,
-                    YScale = pos.Y.Scale,
-                    YOffset = pos.Y.Offset
+                configData.Positions[name] = {
+                    XScale = pos.X.Scale, XOffset = pos.X.Offset,
+                    YScale = pos.Y.Scale, YOffset = pos.Y.Offset
                 }
             end
-            writefile(CONFIG_FILE_NAME, HttpService:JSONEncode(dataToSave))
+            writefile(CONFIG_FILE_NAME, HttpService:JSONEncode(configData))
         end
     end)
 end
 
--- Hàm đọc vị trí các nút từ file JSON khi khởi động
-local function LoadPositionsFromFile()
+-- Hàm đọc cấu hình tự động từ file JSON
+local function LoadKeypadConfig()
     pcall(function()
         if readfile and isfile and isfile(CONFIG_FILE_NAME) and HttpService then
-            local decoded = HttpService:JSONDecode(readfile(CONFIG_FILE_NAME))
-            if decoded then
-                for name, pos in pairs(decoded) do
-                    if RegisteredKeysByName[name] then
-                        RegisteredKeysByName[name].Btn.Position = UDim2.new(
-                            pos.XScale or 0, pos.XOffset or 0,
-                            pos.YScale or 0, pos.YOffset or 0
-                        )
+            local result = HttpService:JSONDecode(readfile(CONFIG_FILE_NAME))
+            if result then
+                if result.Shape then CurrentShape = result.Shape end
+                if result.Size then BaseButtonSize = result.Size end
+                if result.Positions then
+                    for name, posData in pairs(result.Positions) do
+                        if RegisteredKeysByName[name] then
+                            RegisteredKeysByName[name].Btn.Position = UDim2.new(
+                                posData.XScale or 1, posData.XOffset or 0,
+                                posData.YScale or 0.5, posData.YOffset or 0
+                            )
+                        end
                     end
                 end
             end
@@ -123,7 +129,7 @@ local function CreateCustomButton(name, text, defaultPos, widthMult, keyCodes, i
     local isActive = false
     local keys = typeof(keyCodes) == "table" and keyCodes or {keyCodes}
 
-    -- Hiệu ứng cầu vồng
+    -- Hiệu ứng cầu vồng khi nhấn phím
     task.spawn(function()
         while true do
             if isActive then
@@ -196,7 +202,7 @@ local function CreateCustomButton(name, text, defaultPos, widthMult, keyCodes, i
         end)
     end
 
-    -- Tính năng kéo thả (Drag Mode)
+    -- Kéo thả tự động lưu vị trí khi thả tay
     local dragging = false
     local dragInput, dragStart, startPos
 
@@ -209,7 +215,7 @@ local function CreateCustomButton(name, text, defaultPos, widthMult, keyCodes, i
                 if input.UserInputState == Enum.UserInputState.End then
                     if dragging then
                         dragging = false
-                        SavePositionsToFile() -- Tự động lưu ngay khi thả tay ra
+                        SaveKeypadConfig()
                     end
                 end
             end)
@@ -284,8 +290,8 @@ local function UpdateButtonStyles()
     end
 end
 
+LoadKeypadConfig()
 UpdateButtonStyles()
-LoadPositionsFromFile() -- Tải lại vị trí đã lưu từ file
 
 -------------------------------------------------
 -- KHỞI TẠO RAYFIELD GUI
@@ -294,14 +300,14 @@ local Window = Rayfield:CreateWindow({
    Name = "⚡ Super Fix Lag & Utilities",
    LoadingTitle = "Đang tải Giao Diện...",
    LoadingSubtitle = "by Roblox Studio",
-   ConfigurationSaving = { Enabled = false }, -- Tắt mặc định của Rayfield để dùng hệ thống file tự chế chuẩn hơn
+   ConfigurationSaving = { Enabled = true, FolderName = "FixLagConfig", FileName = "ConfigMenu" },
    Discord = { Enabled = false },
    KeySystem = true,
    KeySettings = {
       Title = "Nhập Key Để Sử Dụng",
       Subtitle = "Hệ thống bảo vệ Script",
       Note = "Key của bạn là: freekey", 
-      FileName = "FixLagKeySystem", 
+      FileName = "FixLagKey", 
       SaveKey = true,
       GrabKeyFromSite = false,
       Key = {"freekey"}
@@ -368,7 +374,7 @@ MainTab:CreateButton({
 })
 
 -------------------------------------------------
--- MỤC 2: TÙY CHỈNH TỪNG NÚT & LƯU CONFIG
+-- MỤC 2: TÙY CHỈNH PHÍM ẢO & LƯU CONFIG
 -------------------------------------------------
 MainTab:CreateSection("Tùy Chỉnh Phím Ảo (Tự Động Lưu Vị Trí)")
 
@@ -392,8 +398,8 @@ MainTab:CreateToggle({
        if Value then
            Rayfield:Notify({ Title = "Chỉnh vị trí", Content = "Đã BẬT: Hãy dùng tay kéo từng nút đến vị trí mong muốn!", Duration = 3 })
        else
-           SavePositionsToFile()
-           Rayfield:Notify({ Title = "Chỉnh vị trí", Content = "Đã TẮT: Đã lưu vị trí vào file thành công.", Duration = 2 })
+           SaveKeypadConfig()
+           Rayfield:Notify({ Title = "Chỉnh vị trí", Content = "Đã TẮT: Đã lưu vị trí thành công.", Duration = 2 })
        end
    end,
 })
@@ -413,7 +419,7 @@ MainTab:CreateDropdown({
            CurrentShape = "Rounded"
        end
        UpdateButtonStyles()
-       SavePositionsToFile()
+       SaveKeypadConfig()
    end,
 })
 
@@ -427,7 +433,7 @@ MainTab:CreateSlider({
    Callback = function(Value)
        BaseButtonSize = Value
        UpdateButtonStyles()
-       SavePositionsToFile()
+       SaveKeypadConfig()
    end,
 })
 
@@ -435,8 +441,8 @@ MainTab:CreateButton({
    Name = "💾 Lưu Vị Trí Phím Thủ Công",
    Callback = function()
        PlayClick()
-       SavePositionsToFile()
-       Rayfield:Notify({ Title = "Thành công", Content = "Đã lưu vị trí thủ công vào file.", Duration = 2 })
+       SaveKeypadConfig()
+       Rayfield:Notify({ Title = "Thành công", Content = "Đã lưu vị trí vào file.", Duration = 2 })
    end,
 })
 
@@ -495,10 +501,6 @@ MainTab:CreateToggle({
        end
    end,
 })
-
-local BhopEnabled = false
-local BhopSpeed = 24
-local BhopConnection = nil
 
 MainTab:CreateToggle({
    Name = "🐰 Bunny Hop (Bhop gia tốc di chuyển)",
