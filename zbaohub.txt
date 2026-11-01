@@ -221,15 +221,11 @@ CreateCustomButton("F", "F", UDim2.new(1, -170, 0.24, 0), 0.8, Enum.KeyCode.F)
 CreateCustomButton("G", "G", UDim2.new(1, -130, 0.24, 0), 0.8, Enum.KeyCode.G)
 
 -- Cụm di chuyển cũ (WA, WD, A, S, D, SA, SD)
-CreateCustomButton("WA", "WA", UDim2.new(1, -210, 0.33, 0), 1, {Enum.KeyCode.W, Enum.KeyCode.A})
-CreateCustomButton("WD", "WD", UDim2.new(1, -125, 0.33, 0), 1, {Enum.KeyCode.W, Enum.KeyCode.D})
+CreateCustomButton("W", "W", UDim2.new(1, -210, 0.33, 0), 1, Enum.KeyCode.W)
 
 CreateCustomButton("A", "A", UDim2.new(1, -215, 0.41, 0), 1, Enum.KeyCode.A)
 CreateCustomButton("S", "S", UDim2.new(1, -170, 0.41, 0), 1, Enum.KeyCode.S)
 CreateCustomButton("D", "D", UDim2.new(1, -125, 0.41, 0), 1, Enum.KeyCode.D)
-
-CreateCustomButton("SA", "SA", UDim2.new(1, -215, 0.49, 0), 1, {Enum.KeyCode.S, Enum.KeyCode.A})
-CreateCustomButton("SD", "SD", UDim2.new(1, -125, 0.49, 0), 1, {Enum.KeyCode.S, Enum.KeyCode.D})
 
 -- Phím Ctrl (Toggle) & Space
 CreateCustomButton("Ctrl", "Ctrl", UDim2.new(1, -215, 0.57, 0), 1.2, Enum.KeyCode.LeftControl, true)
