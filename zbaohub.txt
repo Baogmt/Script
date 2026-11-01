@@ -174,16 +174,16 @@ ScreenGui.Name = "CustomKeypadGui"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = game:GetService("CoreGui")
 
--- Hàm tạo hiệu ứng cầu vồng khi bấm/vuốt
+-- Hiệu ứng cầu vồng mượt khi bấm/vuốt qua nút
 local function PlayRainbowEffect(btn)
    task.spawn(function()
       local hue = math.random()
-      for i = 1, 20 do
+      for i = 1, 15 do
          hue = (hue + 0.1) % 1
          btn.BackgroundColor3 = Color3.fromHSV(hue, 1, 1)
-         task.wait(0.04)
+         task.wait(0.03)
       end
-      btn.BackgroundColor3 = Color3.fromRGB(35, 35, 35) -- Trả về màu nền mặc định
+      btn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
    end)
 end
 
@@ -228,9 +228,9 @@ local function CreateDraggableButton(name, size, position, callback)
       end
    end)
 
-   -- Hỗ trợ hiệu ứng khi vuốt ngón tay qua các phím khác nhau (Swipe Effect)
-   btn.MouseEnter:Connect(function()
-      if not isDragMode and UserInputService.MouseButton1Pressed then
+   -- Hỗ trợ vuốt ngón tay qua các phím (Swipe / TouchSwipe)
+   btn.TouchTap:Connect(function()
+      if not isDragMode then
          PlaySwitchSound()
          PlayRainbowEffect(btn)
          if callback then callback() end
@@ -254,7 +254,7 @@ local function CreateDraggableButton(name, size, position, callback)
    return btn
 end
 
--- Kích thước mặc định 55x55 px cho các nút trong suốt
+-- Tạo hệ thống các phím ảo trong suốt (Kích thước 55px)
 CreateDraggableButton("W", UDim2.new(0, 55, 0, 55), UDim2.new(0.1, 0, 0.4, 0), function() PressKey(Enum.KeyCode.W) end)
 CreateDraggableButton("A", UDim2.new(0, 55, 0, 55), UDim2.new(0.05, 0, 0.48, 0), function() PressKey(Enum.KeyCode.A) end)
 CreateDraggableButton("S", UDim2.new(0, 55, 0, 55), UDim2.new(0.1, 0, 0.48, 0), function() PressKey(Enum.KeyCode.S) end)
@@ -274,7 +274,7 @@ CreateDraggableButton("6", UDim2.new(0, 55, 0, 55), UDim2.new(0.40, 0, 0.4, 0), 
 
 CreateDraggableButton("Space", UDim2.new(0, 75, 0, 55), UDim2.new(0.85, 0, 0.48, 0), function() PressKey(Enum.KeyCode.Space) end)
 
--- Phím Ctrl Trái (Dạng Toggle Giữ/Thả - Đã tắt hoàn toàn thông báo)
+-- Phím Ctrl Trái (Dạng Toggle Giữ/Thả - Không hiện thông báo)
 local isHoldingCtrl = false
 local ctrlConnection = nil
 CreateDraggableButton("Ctrl", UDim2.new(0, 55, 0, 55), UDim2.new(0.85, 0, 0.38, 0), function()
