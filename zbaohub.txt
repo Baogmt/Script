@@ -204,7 +204,7 @@ local function CreateCustomButton(name, text, defaultPos, widthMult, keyCodes, i
                         pcall(function() VirtualInputManager:SendKeyEvent(false, k, false, game) end)
                     end
                 end
-            end
+            end)
         end)
     end
 
@@ -250,38 +250,37 @@ local function CreateCustomButton(name, text, defaultPos, widthMult, keyCodes, i
 end
 
 -------------------------------------------------
--- 📌 BỐ CỤC PHÍM CHUẨN XÁC THEO ẢNH (2400x1080) - ĐÃ BỎ WA, WD, SA, SD
+-- 📌 BỐ CỤC MỚI KHỚP GỌN GÀNG KHÔNG LỆCH GIAO DIỆN
 -------------------------------------------------
 
--- Cụm di chuyển bên trái (W, A, S, D)
-CreateCustomButton("W",  "W",  UDim2.new(0, 115, 0.45, 0), 1, Enum.KeyCode.W)
-CreateCustomButton("A",  "A",  UDim2.new(0, 45, 0.62, 0),  1, Enum.KeyCode.A)
-CreateCustomButton("S",  "S",  UDim2.new(0, 115, 0.70, 0), 1, Enum.KeyCode.S)
-CreateCustomButton("D",  "D",  UDim2.new(0, 185, 0.62, 0), 1, Enum.KeyCode.D)
+-- Cụm di chuyển WASD (Góc dưới bên trái)
+CreateCustomButton("W",  "W",  UDim2.new(0, 80, 0.55, 0),  1, Enum.KeyCode.W)
+CreateCustomButton("A",  "A",  UDim2.new(0, 20, 0.70, 0),  1, Enum.KeyCode.A)
+CreateCustomButton("S",  "S",  UDim2.new(0, 80, 0.80, 0),  1, Enum.KeyCode.S)
+CreateCustomButton("D",  "D",  UDim2.new(0, 140, 0.70, 0), 1, Enum.KeyCode.D)
 
--- Cụm bên phải trên: Q, E, G, Ctrl, Space
-CreateCustomButton("Q", "Q", UDim2.new(1, -340, 0.05, 0), 1, Enum.KeyCode.Q)
-CreateCustomButton("E", "E", UDim2.new(1, -260, 0.05, 0), 1, Enum.KeyCode.E)
-CreateCustomButton("G", "G", UDim2.new(1, -180, 0.05, 0), 1, Enum.KeyCode.G)
+-- Hàng phím Q, E, G, Ctrl, Space (Góc trên bên phải, tránh menu)
+CreateCustomButton("Q", "Q", UDim2.new(1, -380, 0.05, 0), 1, Enum.KeyCode.Q)
+CreateCustomButton("E", "E", UDim2.new(1, -300, 0.05, 0), 1, Enum.KeyCode.E)
+CreateCustomButton("G", "G", UDim2.new(1, -220, 0.05, 0), 1, Enum.KeyCode.G)
 
-CreateCustomButton("Ctrl", "Ctrl", UDim2.new(1, -340, 0.18, 0), 1.2, Enum.KeyCode.LeftControl, true)
-CreateCustomButton("Space", "Space", UDim2.new(1, -240, 0.18, 0), 2.2, Enum.KeyCode.Space)
+CreateCustomButton("Ctrl", "Ctrl", UDim2.new(1, -380, 0.18, 0), 1.2, Enum.KeyCode.LeftControl, true)
+CreateCustomButton("Space", "Space", UDim2.new(1, -280, 0.18, 0), 2.2, Enum.KeyCode.Space)
 
--- Cụm bên phải giữa: Hàng số (1 đến 6) và phím F
-CreateCustomButton("Num1", "1", UDim2.new(1, -340, 0.32, 0), 1, Enum.KeyCode.One)
-CreateCustomButton("Num2", "2", UDim2.new(1, -280, 0.32, 0), 1, Enum.KeyCode.Two)
-CreateCustomButton("Num3", "3", UDim2.new(1, -220, 0.32, 0), 1, Enum.KeyCode.Three)
-CreateCustomButton("Num4", "4", UDim2.new(1, -160, 0.32, 0), 1, Enum.KeyCode.Four)
-CreateCustomButton("Num5", "5", UDim2.new(1, -100, 0.32, 0), 1, Enum.KeyCode.Five)
-CreateCustomButton("Num6", "6", UDim2.new(1, -40, 0.32, 0),  1, Enum.KeyCode.Six)
+-- Hàng số (1 đến 6) và phím F (Nằm ngang phía trên giữa màn hình)
+CreateCustomButton("Num1", "1", UDim2.new(0.40, 0, 0.05, 0), 1, Enum.KeyCode.One)
+CreateCustomButton("Num2", "2", UDim2.new(0.46, 0, 0.05, 0), 1, Enum.KeyCode.Two)
+CreateCustomButton("Num3", "3", UDim2.new(0.52, 0, 0.05, 0), 1, Enum.KeyCode.Three)
+CreateCustomButton("Num4", "4", UDim2.new(0.58, 0, 0.05, 0), 1, Enum.KeyCode.Four)
+CreateCustomButton("Num5", "5", UDim2.new(0.64, 0, 0.05, 0), 1, Enum.KeyCode.Five)
+CreateCustomButton("Num6", "6", UDim2.new(0.70, 0, 0.05, 0), 1, Enum.KeyCode.Six)
 
-CreateCustomButton("F", "F", UDim2.new(1, -340, 0.45, 0), 1, Enum.KeyCode.F)
+CreateCustomButton("F", "F", UDim2.new(0.34, 0, 0.05, 0), 1, Enum.KeyCode.F)
 
--- Cụm bên phải dưới: O, I và nút Music
-CreateCustomButton("O", "O", UDim2.new(1, -160, 0.72, 0), 1, Enum.KeyCode.O)
-CreateCustomButton("I", "I", UDim2.new(1, -100, 0.72, 0), 1, Enum.KeyCode.I)
-
-CreateCustomButton("Music", "Music", UDim2.new(1, -160, 0.85, 0), 1.8, nil, false, true)
+-- Phím O, I và nút Music (Góc dưới bên phải)
+CreateCustomButton("O", "O", UDim2.new(1, -180, 0.75, 0), 1, Enum.KeyCode.O)
+CreateCustomButton("I", "I", UDim2.new(1, -120, 0.75, 0), 1, Enum.KeyCode.I)
+CreateCustomButton("Music", "Music", UDim2.new(1, -180, 0.88, 0), 1.8, nil, false, true)
 
 local function UpdateButtonStyles()
     for _, data in ipairs(RegisteredKeys) do
