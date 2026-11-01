@@ -16,15 +16,15 @@ local Players = game:GetService("Players")
 local CoreGui = game:GetService("CoreGui")
 
 local LocalPlayer = Players.LocalPlayer
-local CONFIG_FILE_NAME = "NewVirtualKeypadConfig_v2.json" -- File cấu hình mới hoàn toàn
+local CONFIG_FILE_NAME = "NewVirtualKeypadConfig_v4.json"
 
 -------------------------------------------------
--- HỆ THỐNG ÂM THANH (CLICK SOUND)
+-- HỆ THỐNG ÂM THANH (CLICK SOUND - TĂNG 3X ÂM LƯỢNG)
 -------------------------------------------------
 local clickSound = Instance.new("Sound")
 clickSound.Name = "MenuClickSound"
 clickSound.SoundId = "rbxassetid://6895079853"
-clickSound.Volume = 1.5
+clickSound.Volume = 3.0
 clickSound.Parent = SoundService
 
 local function PlayClick()
@@ -32,7 +32,7 @@ local function PlayClick()
 end
 
 -------------------------------------------------
--- HỆ THỐNG PHÍM ẢO & LƯU CONFIG (MỚI)
+-- HỆ THỐNG PHÍM ẢO & LƯU CONFIG
 -------------------------------------------------
 if CoreGui:FindFirstChild("VirtualKeypadGui") then
     CoreGui.VirtualKeypadGui:Destroy()
@@ -49,7 +49,7 @@ local RegisteredKeysByName = {}
 local CurrentShape = "Rounded"
 local BaseButtonSize = 35
 
--- Xóa file cấu hình cũ nếu có lỗi kẹt dữ liệu, sau đó tạo mới
+-- Tạo file config mới
 pcall(function()
     if isfile and isfile(CONFIG_FILE_NAME) and delfile then
         delfile(CONFIG_FILE_NAME)
@@ -98,6 +98,7 @@ local function LoadKeypadConfig()
     end)
 end
 
+-- Hàm tạo phím với hiệu ứng màu Cầu Vồng khi nhấn
 local function CreateCustomButton(name, text, defaultPos, widthMult, keyCodes, isToggle)
     local btn = Instance.new("TextButton")
     btn.Name = name
@@ -120,20 +121,37 @@ local function CreateCustomButton(name, text, defaultPos, widthMult, keyCodes, i
 
     local isDown = false
     local toggleState = false
+    local isActive = false
     local keys = typeof(keyCodes) == "table" and keyCodes or {keyCodes}
+
+    -- Vòng lặp đổi màu Cầu Vồng (Rainbow Effect)
+    task.spawn(function()
+        while true do
+            if isActive then
+                pcall(function()
+                    local hue = (tick() % 4) / 4
+                    btn.BackgroundColor3 = Color3.fromHSV(hue, 1, 1)
+                    btn.BackgroundTransparency = 0.1
+                end)
+            end
+            task.wait(0.03)
+        end
+    end)
+
+    local function SetVisualState(active)
+        isActive = active
+        if not active then
+            btn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+            btn.BackgroundTransparency = 0.4
+        end
+    end
 
     if isToggle then
         btn.MouseButton1Click:Connect(function()
             if IsEditingLayout then return end
             PlayClick()
             toggleState = not toggleState
-            if toggleState then
-                btn.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
-                btn.BackgroundTransparency = 0.1
-            else
-                btn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-                btn.BackgroundTransparency = 0.4
-            end
+            SetVisualState(toggleState)
             for _, k in ipairs(keys) do
                 pcall(function() VirtualInputManager:SendKeyEvent(toggleState, k, false, game) end)
             end
@@ -144,8 +162,7 @@ local function CreateCustomButton(name, text, defaultPos, widthMult, keyCodes, i
                 if IsEditingLayout then return end
                 isDown = true
                 PlayClick()
-                btn.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
-                btn.BackgroundTransparency = 0.1
+                SetVisualState(true)
                 for _, k in ipairs(keys) do
                     pcall(function() VirtualInputManager:SendKeyEvent(true, k, false, game) end)
                 end
@@ -156,8 +173,7 @@ local function CreateCustomButton(name, text, defaultPos, widthMult, keyCodes, i
             if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
                 if isDown then
                     isDown = false
-                    btn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-                    btn.BackgroundTransparency = 0.4
+                    SetVisualState(false)
                     for _, k in ipairs(keys) do
                         pcall(function() VirtualInputManager:SendKeyEvent(false, k, false, game) end)
                     end
@@ -208,21 +224,24 @@ local function CreateCustomButton(name, text, defaultPos, widthMult, keyCodes, i
 end
 
 -------------------------------------------------
--- 📌 TẠO CÁC NÚT PHÍM ẢO TRÊN MÀN HÌNH (ĐÃ CÓ W ĐẦY ĐỦ)
+-- 📌 TẠO CÁC NÚT PHÍM ẢO TRÊN MÀN HÌNH (ĐÃ THÊM O VÀ I)
 -------------------------------------------------
-CreateCustomButton("Num1", "1", UDim2.new(1, -250, 0.15, 0), 0.8, Enum.KeyCode.One)
-CreateCustomButton("Num2", "2", UDim2.new(1, -210, 0.15, 0), 0.8, Enum.KeyCode.Two)
-CreateCustomButton("Num3", "3", UDim2.new(1, -170, 0.15, 0), 0.8, Enum.KeyCode.Three)
-CreateCustomButton("Num4", "4", UDim2.new(1, -130, 0.15, 0), 0.8, Enum.KeyCode.Four)
-CreateCustomButton("Num5", "5", UDim2.new(1, -90, 0.15, 0), 0.8, Enum.KeyCode.Five)
-CreateCustomButton("Num6", "6", UDim2.new(1, -50, 0.15, 0), 0.8, Enum.KeyCode.Six)
+CreateCustomButton("Num1", "1", UDim2.new(1, -290, 0.15, 0), 0.8, Enum.KeyCode.One)
+CreateCustomButton("Num2", "2", UDim2.new(1, -250, 0.15, 0), 0.8, Enum.KeyCode.Two)
+CreateCustomButton("Num3", "3", UDim2.new(1, -210, 0.15, 0), 0.8, Enum.KeyCode.Three)
+CreateCustomButton("Num4", "4", UDim2.new(1, -170, 0.15, 0), 0.8, Enum.KeyCode.Four)
+CreateCustomButton("Num5", "5", UDim2.new(1, -130, 0.15, 0), 0.8, Enum.KeyCode.Five)
+CreateCustomButton("Num6", "6", UDim2.new(1, -90, 0.15, 0), 0.8, Enum.KeyCode.Six)
 
-CreateCustomButton("Q", "Q", UDim2.new(1, -250, 0.24, 0), 0.8, Enum.KeyCode.Q)
-CreateCustomButton("E", "E", UDim2.new(1, -210, 0.24, 0), 0.8, Enum.KeyCode.E)
-CreateCustomButton("F", "F", UDim2.new(1, -170, 0.24, 0), 0.8, Enum.KeyCode.F)
-CreateCustomButton("G", "G", UDim2.new(1, -130, 0.24, 0), 0.8, Enum.KeyCode.G)
+-- Hàng Q, E, F, G, O, I
+CreateCustomButton("Q", "Q", UDim2.new(1, -290, 0.24, 0), 0.8, Enum.KeyCode.Q)
+CreateCustomButton("E", "E", UDim2.new(1, -250, 0.24, 0), 0.8, Enum.KeyCode.E)
+CreateCustomButton("F", "F", UDim2.new(1, -210, 0.24, 0), 0.8, Enum.KeyCode.F)
+CreateCustomButton("G", "G", UDim2.new(1, -170, 0.24, 0), 0.8, Enum.KeyCode.G)
+CreateCustomButton("O", "O", UDim2.new(1, -130, 0.24, 0), 0.8, Enum.KeyCode.O)
+CreateCustomButton("I", "I", UDim2.new(1, -90, 0.24, 0), 0.8, Enum.KeyCode.I)
 
--- Cụm di chuyển chuẩn (Có nút W riêng biệt và các phím chéo)
+-- Cụm di chuyển đầy đủ (W, A, S, D và các phím chéo)
 CreateCustomButton("WA", "WA", UDim2.new(1, -250, 0.33, 0), 1, {Enum.KeyCode.W, Enum.KeyCode.A})
 CreateCustomButton("W",  "W",  UDim2.new(1, -210, 0.33, 0), 1, Enum.KeyCode.W)
 CreateCustomButton("WD", "WD", UDim2.new(1, -170, 0.33, 0), 1, {Enum.KeyCode.W, Enum.KeyCode.D})
