@@ -1,4 +1,4 @@
-local success, Rayfield = pcall(function()
+Local success, Rayfield = pcall(function()
     return loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 end)
 
@@ -16,6 +16,7 @@ local Players = game:GetService("Players")
 local CoreGui = game:GetService("CoreGui")
 
 local LocalPlayer = Players.LocalPlayer
+local CONFIG_FOLDER = "VirtualKeypadConfig"
 local CONFIG_FILE_NAME = "NewVirtualKeypadConfig_v4.json"
 
 -------------------------------------------------
@@ -32,7 +33,7 @@ local function PlayClick()
 end
 
 -------------------------------------------------
--- HỆ THỐNG PHÍM ẢO & LƯU CONFIG
+-- HỆ THỐNG PHÍM ẢO & LƯU CONFIG (ĐÃ SỬA LỖI)
 -------------------------------------------------
 if CoreGui:FindFirstChild("VirtualKeypadGui") then
     CoreGui.VirtualKeypadGui:Destroy()
@@ -49,12 +50,16 @@ local RegisteredKeysByName = {}
 local CurrentShape = "Rounded"
 local BaseButtonSize = 35
 
--- Tạo file config mới
+-- Tạo thư mục chứa Config nếu chưa có
 pcall(function()
-    if isfile and isfile(CONFIG_FILE_NAME) and delfile then
-        delfile(CONFIG_FILE_NAME)
+    if makefolder and isfolder then
+        if not isfolder(CONFIG_FOLDER) then
+            makefolder(CONFIG_FOLDER)
+        end
     end
 end)
+
+local FULL_CONFIG_PATH = CONFIG_FOLDER .. "/" .. CONFIG_FILE_NAME
 
 local function SaveKeypadConfig()
     pcall(function()
@@ -71,16 +76,22 @@ local function SaveKeypadConfig()
                     YScale = pos.Y.Scale, YOffset = pos.Y.Offset
                 }
             end
-            writefile(CONFIG_FILE_NAME, HttpService:JSONEncode(configData))
+            writefile(FULL_CONFIG_PATH, HttpService:JSONEncode(configData))
+            print("Đã lưu vị trí phím thành công vào: " .. FULL_CONFIG_PATH)
+        else
+            warn("Executor không hỗ trợ ghi file (writefile)!")
         end
     end)
 end
 
 local function LoadKeypadConfig()
     pcall(function()
-        if readfile and isfile and isfile(CONFIG_FILE_NAME) and HttpService then
-            local result = HttpService:JSONDecode(readfile(CONFIG_FILE_NAME))
-            if result then
+        if readfile and isfile and isfile(FULL_CONFIG_PATH) and HttpService then
+            local success, result = pcall(function()
+                return HttpService:JSONEncode and HttpService:JSONDecode(readfile(FULL_CONFIG_PATH))
+            end)
+            
+            if success and result then
                 if result.Shape then CurrentShape = result.Shape end
                 if result.Size then BaseButtonSize = result.Size end
                 if result.Positions then
@@ -93,6 +104,7 @@ local function LoadKeypadConfig()
                         end
                     end
                 end
+                print("Đã tải cấu hình phím thành công!")
             end
         end
     end)
@@ -224,7 +236,7 @@ local function CreateCustomButton(name, text, defaultPos, widthMult, keyCodes, i
 end
 
 -------------------------------------------------
--- 📌 TẠO CÁC NÚT PHÍM ẢO TRÊN MÀN HÌNH (ĐÃ THÊM O VÀ I)
+-- 📌 TẠO CÁC NÚT PHÍM ẢO TRÊN MÀN HÌNH
 -------------------------------------------------
 CreateCustomButton("Num1", "1", UDim2.new(1, -290, 0.15, 0), 0.8, Enum.KeyCode.One)
 CreateCustomButton("Num2", "2", UDim2.new(1, -250, 0.15, 0), 0.8, Enum.KeyCode.Two)
@@ -241,7 +253,7 @@ CreateCustomButton("G", "G", UDim2.new(1, -170, 0.24, 0), 0.8, Enum.KeyCode.G)
 CreateCustomButton("O", "O", UDim2.new(1, -130, 0.24, 0), 0.8, Enum.KeyCode.O)
 CreateCustomButton("I", "I", UDim2.new(1, -90, 0.24, 0), 0.8, Enum.KeyCode.I)
 
--- Cụm di chuyển đầy đủ (W, A, S, D và các phím chéo)
+-- Cụm di chuyển đầy đủ
 CreateCustomButton("WA", "WA", UDim2.new(1, -250, 0.33, 0), 1, {Enum.KeyCode.W, Enum.KeyCode.A})
 CreateCustomButton("W",  "W",  UDim2.new(1, -210, 0.33, 0), 1, Enum.KeyCode.W)
 CreateCustomButton("WD", "WD", UDim2.new(1, -170, 0.33, 0), 1, {Enum.KeyCode.W, Enum.KeyCode.D})
