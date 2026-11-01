@@ -17,7 +17,6 @@ local CoreGui = game:GetService("CoreGui")
 local Lighting = game:GetService("Lighting")
 
 local LocalPlayer = Players.LocalPlayer
-local CONFIG_FILE_NAME = "NewVirtualKeypadConfig_v6.json"
 
 -------------------------------------------------
 -- HỆ THỐNG ÂM THANH (CLICK SOUND - TĂNG 3X ÂM LƯỢNG)
@@ -43,7 +42,7 @@ backgroundMusic.Looped = true
 backgroundMusic.Parent = SoundService
 
 -------------------------------------------------
--- HỆ THỐNG PHÍM ẢO & LƯU CONFIG
+-- HỆ THỐNG PHÍM ẢO & QUẢN LÝ VỊ TRÍ
 -------------------------------------------------
 if CoreGui:FindFirstChild("VirtualKeypadGui") then
     CoreGui.VirtualKeypadGui:Destroy()
@@ -60,55 +59,34 @@ local RegisteredKeysByName = {}
 local CurrentShape = "Rounded"
 local BaseButtonSize = 35
 
-pcall(function()
-    if isfile and isfile(CONFIG_FILE_NAME) and delfile then
-        delfile(CONFIG_FILE_NAME)
-    end
-end)
-
-local function SaveKeypadConfig()
+-- Sử dụng Rayfield Flags để lưu vị trí tự động chuẩn xác không lỗi file
+local function SaveKeypadConfigToRayfield()
     pcall(function()
-        if writefile and HttpService then
-            local configData = {
-                Shape = CurrentShape,
-                Size = BaseButtonSize,
-                Positions = {}
-            }
-            for name, data in pairs(RegisteredKeysByName) do
-                local pos = data.Btn.Position
-                configData.Positions[name] = {
-                    XScale = pos.X.Scale, XOffset = pos.X.Offset,
-                    YScale = pos.Y.Scale, YOffset = pos.Y.Offset
-                }
-            end
-            writefile(CONFIG_FILE_NAME, HttpService:JSONEncode(configData))
+        for name, data in pairs(RegisteredKeysByName) do
+            local pos = data.Btn.Position
+            Rayfield:SetFlag(name .. "_XScale", pos.X.Scale)
+            Rayfield:SetFlag(name .. "_XOffset", pos.X.Offset)
+            Rayfield:SetFlag(name .. "_YScale", pos.Y.Scale)
+            Rayfield:SetFlag(name .. "_YOffset", pos.Y.Offset)
         end
     end)
 end
 
-local function LoadKeypadConfig()
+local function LoadKeypadConfigFromRayfield()
     pcall(function()
-        if readfile and isfile and isfile(CONFIG_FILE_NAME) and HttpService then
-            local result = HttpService:JSONDecode(readfile(CONFIG_FILE_NAME))
-            if result then
-                if result.Shape then CurrentShape = result.Shape end
-                if result.Size then BaseButtonSize = result.Size end
-                if result.Positions then
-                    for name, posData in pairs(result.Positions) do
-                        if RegisteredKeysByName[name] then
-                            RegisteredKeysByName[name].Btn.Position = UDim2.new(
-                                posData.XScale or 1, posData.XOffset or 0,
-                                posData.YScale or 0.5, posData.YOffset or 0
-                            )
-                        end
-                    end
-                end
+        for name, data in pairs(RegisteredKeysByName) do
+            local xS = Rayfield.Flags[name .. "_XScale"]
+            local xO = Rayfield.Flags[name .. "_XOffset"]
+            local yS = Rayfield.Flags[name .. "_YScale"]
+            local yO = Rayfield.Flags[name .. "_YOffset"]
+            
+            if xS and xO and yS and yO then
+                data.Btn.Position = UDim2.new(xS, xO, yS, yO)
             end
         end
     end)
 end
 
--- Hàm tạo phím ảo với hiệu ứng cầu vồng khi nhấn
 local function CreateCustomButton(name, text, defaultPos, widthMult, keyCodes, isToggle, isMusicToggle)
     local btn = Instance.new("TextButton")
     btn.Name = name
@@ -134,7 +112,7 @@ local function CreateCustomButton(name, text, defaultPos, widthMult, keyCodes, i
     local isActive = false
     local keys = typeof(keyCodes) == "table" and keyCodes or {keyCodes}
 
-    -- Vòng lặp đổi màu Cầu Vồng (Rainbow Effect)
+    -- Hiệu ứng màu Cầu Vồng (Rainbow Effect)
     task.spawn(function()
         while true do
             if isActive then
@@ -157,7 +135,6 @@ local function CreateCustomButton(name, text, defaultPos, widthMult, keyCodes, i
     end
 
     if isMusicToggle then
-        -- Nút bật/tắt nhạc bằng ID cố định
         btn.MouseButton1Click:Connect(function()
             if IsEditingLayout then return end
             PlayClick()
@@ -204,7 +181,7 @@ local function CreateCustomButton(name, text, defaultPos, widthMult, keyCodes, i
                         pcall(function() VirtualInputManager:SendKeyEvent(false, k, false, game) end)
                     end
                 end
-            end
+            end)
         end)
     end
 
@@ -220,7 +197,7 @@ local function CreateCustomButton(name, text, defaultPos, widthMult, keyCodes, i
                 if input.UserInputState == Enum.UserInputState.End then
                     if dragging then
                         dragging = false
-                        SaveKeypadConfig()
+                        SaveKeypadConfigToRayfield()
                     end
                 end
             end)
@@ -250,7 +227,7 @@ local function CreateCustomButton(name, text, defaultPos, widthMult, keyCodes, i
 end
 
 -------------------------------------------------
--- 📌 TẠO CÁC NÚT PHÍM ẢO TRÊN MÀN HÌNH (CÓ NÚT MUSIC)
+-- 📌 TẠO CÁC NÚT PHÍM ẢO TRÊN MÀN HÌNH
 -------------------------------------------------
 CreateCustomButton("Num1", "1", UDim2.new(1, -290, 0.15, 0), 0.8, Enum.KeyCode.One)
 CreateCustomButton("Num2", "2", UDim2.new(1, -250, 0.15, 0), 0.8, Enum.KeyCode.Two)
@@ -266,7 +243,6 @@ CreateCustomButton("G", "G", UDim2.new(1, -170, 0.24, 0), 0.8, Enum.KeyCode.G)
 CreateCustomButton("O", "O", UDim2.new(1, -130, 0.24, 0), 0.8, Enum.KeyCode.O)
 CreateCustomButton("I", "I", UDim2.new(1, -90, 0.24, 0), 0.8, Enum.KeyCode.I)
 
--- Nút Music mới thêm (Bấm lần 1 phát nhạc, bấm lần 2 tắt)
 CreateCustomButton("Music", "Music", UDim2.new(1, -250, 0.33, 0), 1, nil, false, true)
 
 CreateCustomButton("WA", "WA", UDim2.new(1, -210, 0.33, 0), 1, {Enum.KeyCode.W, Enum.KeyCode.A})
@@ -296,7 +272,6 @@ local function UpdateButtonStyles()
     end
 end
 
-LoadKeypadConfig()
 UpdateButtonStyles()
 
 -------------------------------------------------
@@ -306,14 +281,18 @@ local Window = Rayfield:CreateWindow({
    Name = "⚡ Super Fix Lag & Utilities",
    LoadingTitle = "Đang tải Giao Diện...",
    LoadingSubtitle = "by Roblox Studio",
-   ConfigurationSaving = { Enabled = true, FolderName = "FixLagConfig", FileName = "ConfigMenu" },
+   ConfigurationSaving = { 
+       Enabled = true, 
+       FolderName = "FixLagConfigManager", 
+       FileName = "KeypadMasterConfig" 
+   },
    Discord = { Enabled = false },
    KeySystem = true,
    KeySettings = {
       Title = "Nhập Key Để Sử Dụng",
       Subtitle = "Hệ thống bảo vệ Script",
       Note = "Key của bạn là: freekey", 
-      FileName = "FixLagKey", 
+      FileName = "FixLagKeySystem", 
       SaveKey = true,
       GrabKeyFromSite = false,
       Key = {"freekey"}
@@ -323,6 +302,7 @@ local Window = Rayfield:CreateWindow({
 task.spawn(function()
     repeat task.wait() until Window and Window.Enabled
     ScreenGui.Enabled = true
+    LoadKeypadConfigFromRayfield()
 end)
 
 local MainTab = Window:CreateTab("Main", 4483362458)
@@ -404,7 +384,7 @@ MainTab:CreateToggle({
        if Value then
            Rayfield:Notify({ Title = "Chỉnh vị trí", Content = "Đã BẬT: Hãy dùng tay kéo từng nút đến vị trí mong muốn!", Duration = 3 })
        else
-           SaveKeypadConfig()
+           SaveKeypadConfigToRayfield()
            Rayfield:Notify({ Title = "Chỉnh vị trí", Content = "Đã TẮT: Đã lưu vị trí thành công.", Duration = 2 })
        end
    end,
@@ -425,7 +405,7 @@ MainTab:CreateDropdown({
            CurrentShape = "Rounded"
        end
        UpdateButtonStyles()
-       SaveKeypadConfig()
+       SaveKeypadConfigToRayfield()
    end,
 })
 
@@ -439,7 +419,7 @@ MainTab:CreateSlider({
    Callback = function(Value)
        BaseButtonSize = Value
        UpdateButtonStyles()
-       SaveKeypadConfig()
+       SaveKeypadConfigToRayfield()
    end,
 })
 
@@ -447,8 +427,8 @@ MainTab:CreateButton({
    Name = "💾 Lưu Vị Trí Phím Thủ Công",
    Callback = function()
        PlayClick()
-       SaveKeypadConfig()
-       Rayfield:Notify({ Title = "Thành công", Content = "Đã lưu bố cục thủ công.", Duration = 2 })
+       SaveKeypadConfigToRayfield()
+       Rayfield:Notify({ Title = "Thành công", Content = "Đã lưu bố cục thủ công vào Rayfield Config.", Duration = 2 })
    end,
 })
 
