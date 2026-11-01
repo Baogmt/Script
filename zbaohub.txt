@@ -17,10 +17,10 @@ local CoreGui = game:GetService("CoreGui")
 local Lighting = game:GetService("Lighting")
 
 local LocalPlayer = Players.LocalPlayer
-local CONFIG_FILE_NAME = "VirtualKeypadPositions.json"
+local CONFIG_FILE_NAME = "NewVirtualKeypadConfig_v6.json"
 
 -------------------------------------------------
--- HỆ THỐNG ÂM THANH (CLICK SOUND - 3X)
+-- HỆ THỐNG ÂM THANH (CLICK SOUND - TĂNG 3X ÂM LƯỢNG)
 -------------------------------------------------
 local clickSound = Instance.new("Sound")
 clickSound.Name = "MenuClickSound"
@@ -43,7 +43,7 @@ backgroundMusic.Looped = true
 backgroundMusic.Parent = SoundService
 
 -------------------------------------------------
--- HỆ THỐNG PHÍM ẢO & TỰ ĐỘNG LƯU FILE CONFIG
+-- HỆ THỐNG PHÍM ẢO & LƯU CONFIG
 -------------------------------------------------
 if CoreGui:FindFirstChild("VirtualKeypadGui") then
     CoreGui.VirtualKeypadGui:Destroy()
@@ -60,7 +60,12 @@ local RegisteredKeysByName = {}
 local CurrentShape = "Rounded"
 local BaseButtonSize = 35
 
--- Hàm lưu cấu hình tự động vào file JSON
+pcall(function()
+    if isfile and isfile(CONFIG_FILE_NAME) and delfile then
+        delfile(CONFIG_FILE_NAME)
+    end
+end)
+
 local function SaveKeypadConfig()
     pcall(function()
         if writefile and HttpService then
@@ -81,7 +86,6 @@ local function SaveKeypadConfig()
     end)
 end
 
--- Hàm đọc cấu hình tự động từ file JSON
 local function LoadKeypadConfig()
     pcall(function()
         if readfile and isfile and isfile(CONFIG_FILE_NAME) and HttpService then
@@ -104,6 +108,7 @@ local function LoadKeypadConfig()
     end)
 end
 
+-- Hàm tạo phím ảo với hiệu ứng cầu vồng khi nhấn
 local function CreateCustomButton(name, text, defaultPos, widthMult, keyCodes, isToggle, isMusicToggle)
     local btn = Instance.new("TextButton")
     btn.Name = name
@@ -129,7 +134,7 @@ local function CreateCustomButton(name, text, defaultPos, widthMult, keyCodes, i
     local isActive = false
     local keys = typeof(keyCodes) == "table" and keyCodes or {keyCodes}
 
-    -- Hiệu ứng cầu vồng khi nhấn phím
+    -- Vòng lặp đổi màu Cầu Vồng (Rainbow Effect)
     task.spawn(function()
         while true do
             if isActive then
@@ -152,6 +157,7 @@ local function CreateCustomButton(name, text, defaultPos, widthMult, keyCodes, i
     end
 
     if isMusicToggle then
+        -- Nút bật/tắt nhạc bằng ID cố định
         btn.MouseButton1Click:Connect(function()
             if IsEditingLayout then return end
             PlayClick()
@@ -198,11 +204,10 @@ local function CreateCustomButton(name, text, defaultPos, widthMult, keyCodes, i
                         pcall(function() VirtualInputManager:SendKeyEvent(false, k, false, game) end)
                     end
                 end
-            end)
+            end
         end)
     end
 
-    -- Kéo thả tự động lưu vị trí khi thả tay
     local dragging = false
     local dragInput, dragStart, startPos
 
@@ -245,7 +250,7 @@ local function CreateCustomButton(name, text, defaultPos, widthMult, keyCodes, i
 end
 
 -------------------------------------------------
--- 📌 TẠO CÁC NÚT PHÍM ẢO TRÊN MÀN HÌNH
+-- 📌 TẠO CÁC NÚT PHÍM ẢO TRÊN MÀN HÌNH (CÓ NÚT MUSIC)
 -------------------------------------------------
 CreateCustomButton("Num1", "1", UDim2.new(1, -290, 0.15, 0), 0.8, Enum.KeyCode.One)
 CreateCustomButton("Num2", "2", UDim2.new(1, -250, 0.15, 0), 0.8, Enum.KeyCode.Two)
@@ -261,6 +266,7 @@ CreateCustomButton("G", "G", UDim2.new(1, -170, 0.24, 0), 0.8, Enum.KeyCode.G)
 CreateCustomButton("O", "O", UDim2.new(1, -130, 0.24, 0), 0.8, Enum.KeyCode.O)
 CreateCustomButton("I", "I", UDim2.new(1, -90, 0.24, 0), 0.8, Enum.KeyCode.I)
 
+-- Nút Music mới thêm (Bấm lần 1 phát nhạc, bấm lần 2 tắt)
 CreateCustomButton("Music", "Music", UDim2.new(1, -250, 0.33, 0), 1, nil, false, true)
 
 CreateCustomButton("WA", "WA", UDim2.new(1, -210, 0.33, 0), 1, {Enum.KeyCode.W, Enum.KeyCode.A})
@@ -374,7 +380,7 @@ MainTab:CreateButton({
 })
 
 -------------------------------------------------
--- MỤC 2: TÙY CHỈNH PHÍM ẢO & LƯU CONFIG
+-- MỤC 2: TÙY CHỈNH TỪNG NÚT & LƯU CONFIG
 -------------------------------------------------
 MainTab:CreateSection("Tùy Chỉnh Phím Ảo (Tự Động Lưu Vị Trí)")
 
@@ -442,7 +448,7 @@ MainTab:CreateButton({
    Callback = function()
        PlayClick()
        SaveKeypadConfig()
-       Rayfield:Notify({ Title = "Thành công", Content = "Đã lưu vị trí vào file.", Duration = 2 })
+       Rayfield:Notify({ Title = "Thành công", Content = "Đã lưu bố cục thủ công.", Duration = 2 })
    end,
 })
 
@@ -501,6 +507,10 @@ MainTab:CreateToggle({
        end
    end,
 })
+
+local BhopEnabled = false
+local BhopSpeed = 24
+local BhopConnection = nil
 
 MainTab:CreateToggle({
    Name = "🐰 Bunny Hop (Bhop gia tốc di chuyển)",
