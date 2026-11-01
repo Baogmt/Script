@@ -32,7 +32,7 @@ local function PlayClick()
 end
 
 -------------------------------------------------
--- HỆ THỐNG PHÍM ẢO & JOYSTICK AN TOÀN (KHÔNG VĂNG)
+-- HỆ THỐNG PHÍM ẢO & LƯU CONFIG (AN TOÀN)
 -------------------------------------------------
 if CoreGui:FindFirstChild("VirtualKeypadGui") then
     CoreGui.VirtualKeypadGui:Destroy()
@@ -93,7 +93,7 @@ local function LoadKeypadConfig()
     end)
 end
 
--- Hàm tạo phím chức năng tùy biến
+-- Hàm tạo phím (Hỗ trợ 1 phím hoặc tổ hợp phím đi chéo, hỗ trợ Toggle)
 local function CreateCustomButton(name, text, defaultPos, widthMult, keyCodes, isToggle)
     local btn = Instance.new("TextButton")
     btn.Name = name
@@ -204,98 +204,9 @@ local function CreateCustomButton(name, text, defaultPos, widthMult, keyCodes, i
 end
 
 -------------------------------------------------
--- TẠO JOYSTICK AN TOÀN (CHỐNG VĂNG)
+-- 📌 TẠO CÁC NÚT PHÍM ẢO TRÊN MÀN HÌNH
 -------------------------------------------------
-local JoystickFrame = Instance.new("Frame")
-JoystickFrame.Name = "VirtualJoystick"
-JoystickFrame.Size = UDim2.new(0, 110, 0, 110)
-JoystickFrame.Position = UDim2.new(0, 40, 0.65, -55)
-JoystickFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-JoystickFrame.BackgroundTransparency = 0.5
-JoystickFrame.BorderSizePixel = 0
-JoystickFrame.Parent = ScreenGui
-
-local joystickCorner = Instance.new("UICorner")
-joystickCorner.CornerRadius = UDim.new(1, 0)
-joystickCorner.Parent = JoystickFrame
-
-local Knob = Instance.new("Frame")
-Knob.Name = "Knob"
-Knob.Size = UDim2.new(0, 50, 0, 50)
-Knob.AnchorPoint = Vector2.new(0.5, 0.5)
-Knob.Position = UDim2.new(0.5, 0, 0.5, 0)
-Knob.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
-Knob.BackgroundTransparency = 0.2
-Knob.BorderSizePixel = 0
-Knob.Parent = JoystickFrame
-
-local knobCorner = Instance.new("UICorner")
-knobCorner.CornerRadius = UDim.new(1, 0)
-knobCorner.Parent = Knob
-
-local joystickActive = false
-local joystickInputObject = nil
-local maxRadius = 35
-
-RunService.RenderStepped:Connect(function()
-    pcall(function()
-        if joystickActive and joystickInputObject and LocalPlayer.Character then
-            local char = LocalPlayer.Character
-            local humanoid = char:FindFirstChildOfClass("Humanoid")
-            local cam = workspace.CurrentCamera
-            
-            if humanoid then
-                local pos = joystickInputObject.Position
-                local center = JoystickFrame.AbsolutePosition + Vector2.new(55, 55)
-                local delta = Vector2.new(pos.X - center.X, pos.Y - center.Y)
-                local mag = delta.Magnitude
-                
-                if mag > maxRadius then
-                    delta = delta.Unit * maxRadius
-                end
-                
-                Knob.Position = UDim2.new(0.5, delta.X, 0.5, delta.Y)
-                
-                if mag > 5 then
-                    local moveDir = Vector3.new(delta.X, 0, delta.Y).Unit
-                    local camCFrame = cam.CFrame
-                    local lookVector = Vector3.new(camCFrame.LookVector.X, 0, camCFrame.LookVector.Z).Unit
-                    local rightVector = Vector3.new(camCFrame.RightVector.X, 0, camCFrame.RightVector.Z).Unit
-                    
-                    local finalDir = (rightVector * moveDir.X + lookVector * (-moveDir.Z))
-                    humanoid:Move(finalDir, true)
-                else
-                    humanoid:Move(Vector3.new(0,0,0), true)
-                end
-            end
-        end
-    end)
-end)
-
-JoystickFrame.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        joystickActive = true
-        joystickInputObject = input
-    end
-end)
-
-UserInputService.InputEnded:Connect(function(input)
-    if input == joystickInputObject then
-        joystickActive = false
-        joystickInputObject = nil
-        Knob.Position = UDim2.new(0.5, 0, 0.5, 0)
-        pcall(function()
-            if LocalPlayer.Character then
-                local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-                if humanoid then humanoid:Move(Vector3.new(0,0,0), true) end
-            end
-        end)
-    end
-end)
-
--------------------------------------------------
--- 📌 TẠO CÁC NÚT PHÍM ẢO CÒN LẠI
--------------------------------------------------
+-- Hàng số (1 - 6)
 CreateCustomButton("Num1", "1", UDim2.new(1, -250, 0.15, 0), 0.8, Enum.KeyCode.One)
 CreateCustomButton("Num2", "2", UDim2.new(1, -210, 0.15, 0), 0.8, Enum.KeyCode.Two)
 CreateCustomButton("Num3", "3", UDim2.new(1, -170, 0.15, 0), 0.8, Enum.KeyCode.Three)
@@ -303,13 +214,26 @@ CreateCustomButton("Num4", "4", UDim2.new(1, -130, 0.15, 0), 0.8, Enum.KeyCode.F
 CreateCustomButton("Num5", "5", UDim2.new(1, -90, 0.15, 0), 0.8, Enum.KeyCode.Five)
 CreateCustomButton("Num6", "6", UDim2.new(1, -50, 0.15, 0), 0.8, Enum.KeyCode.Six)
 
-CreateCustomButton("Q", "Q", UDim2.new(1, -215, 0.25, 0), 1, Enum.KeyCode.Q)
-CreateCustomButton("E", "E", UDim2.new(1, -170, 0.25, 0), 1, Enum.KeyCode.E)
-CreateCustomButton("F", "F", UDim2.new(1, -125, 0.25, 0), 1, Enum.KeyCode.F)
-CreateCustomButton("G", "G", UDim2.new(1, -80, 0.25, 0), 1, Enum.KeyCode.G)
+-- Hàng Q, E, F, G
+CreateCustomButton("Q", "Q", UDim2.new(1, -250, 0.24, 0), 0.8, Enum.KeyCode.Q)
+CreateCustomButton("E", "E", UDim2.new(1, -210, 0.24, 0), 0.8, Enum.KeyCode.E)
+CreateCustomButton("F", "F", UDim2.new(1, -170, 0.24, 0), 0.8, Enum.KeyCode.F)
+CreateCustomButton("G", "G", UDim2.new(1, -130, 0.24, 0), 0.8, Enum.KeyCode.G)
 
-CreateCustomButton("Ctrl", "Ctrl", UDim2.new(1, -215, 0.45, 0), 1.2, Enum.KeyCode.LeftControl, true)
-CreateCustomButton("Space", "Space", UDim2.new(1, -145, 0.45, 0), 2.2, Enum.KeyCode.Space)
+-- Cụm di chuyển cũ (WA, WD, A, S, D, SA, SD)
+CreateCustomButton("WA", "WA", UDim2.new(1, -210, 0.33, 0), 1, {Enum.KeyCode.W, Enum.KeyCode.A})
+CreateCustomButton("WD", "WD", UDim2.new(1, -125, 0.33, 0), 1, {Enum.KeyCode.W, Enum.KeyCode.D})
+
+CreateCustomButton("A", "A", UDim2.new(1, -215, 0.41, 0), 1, Enum.KeyCode.A)
+CreateCustomButton("S", "S", UDim2.new(1, -170, 0.41, 0), 1, Enum.KeyCode.S)
+CreateCustomButton("D", "D", UDim2.new(1, -125, 0.41, 0), 1, Enum.KeyCode.D)
+
+CreateCustomButton("SA", "SA", UDim2.new(1, -215, 0.49, 0), 1, {Enum.KeyCode.S, Enum.KeyCode.A})
+CreateCustomButton("SD", "SD", UDim2.new(1, -125, 0.49, 0), 1, {Enum.KeyCode.S, Enum.KeyCode.D})
+
+-- Phím Ctrl (Toggle) & Space
+CreateCustomButton("Ctrl", "Ctrl", UDim2.new(1, -215, 0.57, 0), 1.2, Enum.KeyCode.LeftControl, true)
+CreateCustomButton("Space", "Space", UDim2.new(1, -145, 0.57, 0), 2.2, Enum.KeyCode.Space)
 
 local function UpdateButtonStyles()
     for _, data in ipairs(RegisteredKeys) do
