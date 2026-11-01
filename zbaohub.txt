@@ -32,7 +32,7 @@ local function PlayClick()
 end
 
 -------------------------------------------------
--- HỆ THỐNG KEYSTROKES & PHÍM ẢO (AN TOÀN)
+-- HỆ THỐNG PHÍM ẢO & LƯU CONFIG (AN TOÀN)
 -------------------------------------------------
 if CoreGui:FindFirstChild("VirtualKeypadGui") then
     CoreGui.VirtualKeypadGui:Destroy()
@@ -93,7 +93,7 @@ local function LoadKeypadConfig()
     end)
 end
 
--- Hàm tạo phím Keystrokes (Hiệu ứng Cầu Vồng)
+-- Hàm tạo phím (Hỗ trợ 1 phím hoặc tổ hợp phím đi chéo, hỗ trợ Toggle)
 local function CreateCustomButton(name, text, defaultPos, widthMult, keyCodes, isToggle)
     local btn = Instance.new("TextButton")
     btn.Name = name
@@ -116,36 +116,20 @@ local function CreateCustomButton(name, text, defaultPos, widthMult, keyCodes, i
 
     local isDown = false
     local toggleState = false
-    local isActive = false
     local keys = typeof(keyCodes) == "table" and keyCodes or {keyCodes}
-
-    task.spawn(function()
-        while true do
-            if isActive then
-                pcall(function()
-                    local hue = (tick() % 5) / 5
-                    btn.BackgroundColor3 = Color3.fromHSV(hue, 1, 1)
-                    btn.BackgroundTransparency = 0.1
-                end)
-            end
-            task.wait(0.03)
-        end
-    end)
-
-    local function SetVisualState(active)
-        isActive = active
-        if not active then
-            btn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-            btn.BackgroundTransparency = 0.4
-        end
-    end
 
     if isToggle then
         btn.MouseButton1Click:Connect(function()
             if IsEditingLayout then return end
             PlayClick()
             toggleState = not toggleState
-            SetVisualState(toggleState)
+            if toggleState then
+                btn.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+                btn.BackgroundTransparency = 0.1
+            else
+                btn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+                btn.BackgroundTransparency = 0.4
+            end
             for _, k in ipairs(keys) do
                 pcall(function() VirtualInputManager:SendKeyEvent(toggleState, k, false, game) end)
             end
@@ -156,7 +140,8 @@ local function CreateCustomButton(name, text, defaultPos, widthMult, keyCodes, i
                 if IsEditingLayout then return end
                 isDown = true
                 PlayClick()
-                SetVisualState(true)
+                btn.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+                btn.BackgroundTransparency = 0.1
                 for _, k in ipairs(keys) do
                     pcall(function() VirtualInputManager:SendKeyEvent(true, k, false, game) end)
                 end
@@ -167,27 +152,12 @@ local function CreateCustomButton(name, text, defaultPos, widthMult, keyCodes, i
             if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
                 if isDown then
                     isDown = false
-                    SetVisualState(false)
+                    btn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+                    btn.BackgroundTransparency = 0.4
                     for _, k in ipairs(keys) do
                         pcall(function() VirtualInputManager:SendKeyEvent(false, k, false, game) end)
                     end
                 end
-            end)
-        end)
-    end
-
-    if #keys > 0 then
-        UserInputService.InputBegan:Connect(function(input, gameProcessed)
-            if not gameProcessed then
-                for _, k in ipairs(keys) do
-                    if input.KeyCode == k then SetVisualState(true) end
-                end
-            end
-        end)
-
-        UserInputService.InputEnded:Connect(function(input)
-            for _, k in ipairs(keys) do
-                if input.KeyCode == k then SetVisualState(false) end
             end
         end)
     end
@@ -234,8 +204,9 @@ local function CreateCustomButton(name, text, defaultPos, widthMult, keyCodes, i
 end
 
 -------------------------------------------------
--- 📌 TẠO CÁC NÚT TRÊN MÀN HÌNH
+-- 📌 TẠO CÁC NÚT PHÍM ẢO TRÊN MÀN HÌNH
 -------------------------------------------------
+-- Hàng số (1 - 6)
 CreateCustomButton("Num1", "1", UDim2.new(1, -250, 0.15, 0), 0.8, Enum.KeyCode.One)
 CreateCustomButton("Num2", "2", UDim2.new(1, -210, 0.15, 0), 0.8, Enum.KeyCode.Two)
 CreateCustomButton("Num3", "3", UDim2.new(1, -170, 0.15, 0), 0.8, Enum.KeyCode.Three)
@@ -243,24 +214,26 @@ CreateCustomButton("Num4", "4", UDim2.new(1, -130, 0.15, 0), 0.8, Enum.KeyCode.F
 CreateCustomButton("Num5", "5", UDim2.new(1, -90, 0.15, 0), 0.8, Enum.KeyCode.Five)
 CreateCustomButton("Num6", "6", UDim2.new(1, -50, 0.15, 0), 0.8, Enum.KeyCode.Six)
 
+-- Hàng Q, E, F, G
 CreateCustomButton("Q", "Q", UDim2.new(1, -250, 0.24, 0), 0.8, Enum.KeyCode.Q)
-CreateCustomButton("W", "W", UDim2.new(1, -210, 0.24, 0), 0.8, Enum.KeyCode.W)
-CreateCustomButton("E", "E", UDim2.new(1, -170, 0.24, 0), 0.8, Enum.KeyCode.E)
-CreateCustomButton("F", "F", UDim2.new(1, -130, 0.24, 0), 0.8, Enum.KeyCode.F)
-CreateCustomButton("G", "G", UDim2.new(1, -90, 0.24, 0), 0.8, Enum.KeyCode.G)
+CreateCustomButton("E", "E", UDim2.new(1, -210, 0.24, 0), 0.8, Enum.KeyCode.E)
+CreateCustomButton("F", "F", UDim2.new(1, -170, 0.24, 0), 0.8, Enum.KeyCode.F)
+CreateCustomButton("G", "G", UDim2.new(1, -130, 0.24, 0), 0.8, Enum.KeyCode.G)
 
-CreateCustomButton("WA", "WA", UDim2.new(1, -210, 0.32, 0), 1, {Enum.KeyCode.W, Enum.KeyCode.A})
-CreateCustomButton("WD", "WD", UDim2.new(1, -125, 0.32, 0), 1, {Enum.KeyCode.W, Enum.KeyCode.D})
+-- Cụm di chuyển cũ (WA, WD, A, S, D, SA, SD)
+CreateCustomButton("WA", "WA", UDim2.new(1, -210, 0.33, 0), 1, {Enum.KeyCode.W, Enum.KeyCode.A})
+CreateCustomButton("WD", "WD", UDim2.new(1, -125, 0.33, 0), 1, {Enum.KeyCode.W, Enum.KeyCode.D})
 
-CreateCustomButton("A", "A", UDim2.new(1, -215, 0.40, 0), 1, Enum.KeyCode.A)
-CreateCustomButton("S", "S", UDim2.new(1, -170, 0.40, 0), 1, Enum.KeyCode.S)
-CreateCustomButton("D", "D", UDim2.new(1, -125, 0.40, 0), 1, Enum.KeyCode.D)
+CreateCustomButton("A", "A", UDim2.new(1, -215, 0.41, 0), 1, Enum.KeyCode.A)
+CreateCustomButton("S", "S", UDim2.new(1, -170, 0.41, 0), 1, Enum.KeyCode.S)
+CreateCustomButton("D", "D", UDim2.new(1, -125, 0.41, 0), 1, Enum.KeyCode.D)
 
-CreateCustomButton("SA", "SA", UDim2.new(1, -215, 0.48, 0), 1, {Enum.KeyCode.S, Enum.KeyCode.A})
-CreateCustomButton("SD", "SD", UDim2.new(1, -125, 0.48, 0), 1, {Enum.KeyCode.S, Enum.KeyCode.D})
+CreateCustomButton("SA", "SA", UDim2.new(1, -215, 0.49, 0), 1, {Enum.KeyCode.S, Enum.KeyCode.A})
+CreateCustomButton("SD", "SD", UDim2.new(1, -125, 0.49, 0), 1, {Enum.KeyCode.S, Enum.KeyCode.D})
 
-CreateCustomButton("Ctrl", "Ctrl", UDim2.new(1, -215, 0.56, 0), 1.2, Enum.KeyCode.LeftControl, true)
-CreateCustomButton("Space", "Space", UDim2.new(1, -145, 0.56, 0), 2.2, Enum.KeyCode.Space)
+-- Phím Ctrl (Toggle) & Space
+CreateCustomButton("Ctrl", "Ctrl", UDim2.new(1, -215, 0.57, 0), 1.2, Enum.KeyCode.LeftControl, true)
+CreateCustomButton("Space", "Space", UDim2.new(1, -145, 0.57, 0), 2.2, Enum.KeyCode.Space)
 
 local function UpdateButtonStyles()
     for _, data in ipairs(RegisteredKeys) do
@@ -362,10 +335,10 @@ MainTab:CreateButton({
 -------------------------------------------------
 -- MỤC 2: TÙY CHỈNH TỪNG NÚT & LƯU CONFIG
 -------------------------------------------------
-MainTab:CreateSection("Tùy Chỉnh Keystrokes (Tự Động Lưu Vị Trí)")
+MainTab:CreateSection("Tùy Chỉnh Phím Ảo (Tự Động Lưu Vị Trí)")
 
 MainTab:CreateToggle({
-   Name = "⌨️ Hiện Bảng Keystrokes",
+   Name = "⌨️ Hiện Bảng Phím Ảo",
    CurrentValue = true,
    Flag = "ToggleVirtualKeypad",
    Callback = function(Value)
@@ -465,15 +438,17 @@ MainTab:CreateToggle({
            end)
            
            HoldJumpHeartbeat = RunService.Heartbeat:Connect(function()
-               if HoldJumpEnabled and IsJumpingKeyHeld then
-                   local char = LocalPlayer.Character
-                   if char then
-                       local humanoid = char:FindFirstChildOfClass("Humanoid")
-                       if humanoid and humanoid.FloorMaterial ~= Enum.Material.Air then
-                           humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+               pcall(function()
+                   if HoldJumpEnabled and IsJumpingKeyHeld then
+                       local char = LocalPlayer.Character
+                       if char then
+                           local humanoid = char:FindFirstChildOfClass("Humanoid")
+                           if humanoid and humanoid.FloorMaterial ~= Enum.Material.Air then
+                               humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+                           end
                        end
                    end
-               end
+               end)
            end)
            Rayfield:Notify({ Title = "Hold Jump", Content = "Đã BẬT Hold Jump.", Duration = 2 })
        else
@@ -500,28 +475,30 @@ MainTab:CreateToggle({
        
        if BhopEnabled then
            BhopConnection = RunService.Heartbeat:Connect(function()
-               if BhopEnabled then
-                   local char = LocalPlayer.Character
-                   if char then
-                       local humanoid = char:FindFirstChildOfClass("Humanoid")
-                       local hrp = char:FindFirstChild("HumanoidRootPart")
-                       
-                       if humanoid and hrp then
-                           if humanoid.FloorMaterial ~= Enum.Material.Air and humanoid.MoveDirection.Magnitude > 0 then
-                               humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
-                           end
+               pcall(function()
+                   if BhopEnabled then
+                       local char = LocalPlayer.Character
+                       if char then
+                           local humanoid = char:FindFirstChildOfClass("Humanoid")
+                           local hrp = char:FindFirstChild("HumanoidRootPart")
                            
-                           if humanoid.MoveDirection.Magnitude > 0 then
-                               local moveDir = humanoid.MoveDirection
-                               hrp.AssemblyLinearVelocity = Vector3.new(
-                                   moveDir.X * BhopSpeed,
-                                   hrp.AssemblyLinearVelocity.Y,
-                                   moveDir.Z * BhopSpeed
-                               )
+                           if humanoid and hrp then
+                               if humanoid.FloorMaterial ~= Enum.Material.Air and humanoid.MoveDirection.Magnitude > 0 then
+                                   humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+                               end
+                               
+                               if humanoid.MoveDirection.Magnitude > 0 then
+                                   local moveDir = humanoid.MoveDirection
+                                   hrp.AssemblyLinearVelocity = Vector3.new(
+                                       moveDir.X * BhopSpeed,
+                                       hrp.AssemblyLinearVelocity.Y,
+                                       moveDir.Z * BhopSpeed
+                                   )
+                               end
                            end
                        end
                    end
-               end
+               end)
            end)
            Rayfield:Notify({ Title = "Bhop", Content = "Đã BẬT Bunny Hop.", Duration = 2 })
        else
