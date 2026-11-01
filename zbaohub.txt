@@ -1,17 +1,9 @@
-local Rayfield = nil
-local success, err = pcall(function()
-    Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+local success, Rayfield = pcall(function()
+    return loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 end)
 
 if not success or not Rayfield then
-    -- Link dự phòng nếu link chính bị lỗi mạng
-    success, err = pcall(function()
-        Rayfield = loadstring(game:HttpGet('https://raw.githubusercontent.com/sirius-dev/rayfield-ui/main/source.lua'))()
-    end)
-end
-
-if not success or not Rayfield then
-    warn("Không thể tải thư viện Rayfield! Vui lòng kiểm tra lại Executor hoặc kết nối mạng.")
+    warn("Không thể tải thư viện Rayfield!")
     return
 end
 
@@ -19,11 +11,13 @@ local SoundService = game:GetService("SoundService")
 local VirtualInputManager = game:GetService("VirtualInputManager")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
+local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local CoreGui = game:GetService("CoreGui")
 local Lighting = game:GetService("Lighting")
 
 local LocalPlayer = Players.LocalPlayer
+local CONFIG_FILE_NAME = "CustomKeypadPositions.json"
 
 -------------------------------------------------
 -- HỆ THỐNG ÂM THANH (CLICK SOUND - 3X)
@@ -49,7 +43,7 @@ backgroundMusic.Looped = true
 backgroundMusic.Parent = SoundService
 
 -------------------------------------------------
--- HỆ THỐNG PHÍM ẢO AN TOÀN
+-- HỆ THỐNG PHÍM ẢO & LƯU VỊ TRÍ CHUẨN XÁC
 -------------------------------------------------
 if CoreGui:FindFirstChild("VirtualKeypadGui") then
     CoreGui.VirtualKeypadGui:Destroy()
@@ -66,28 +60,39 @@ local RegisteredKeysByName = {}
 local CurrentShape = "Rounded"
 local BaseButtonSize = 35
 
-local function SaveKeypadConfigToRayfield()
+-- Hàm lưu vị trí các nút vào file JSON
+local function SavePositionsToFile()
     pcall(function()
-        for name, data in pairs(RegisteredKeysByName) do
-            local pos = data.Btn.Position
-            Rayfield:SetFlag(name .. "_XScale", pos.X.Scale)
-            Rayfield:SetFlag(name .. "_XOffset", pos.X.Offset)
-            Rayfield:SetFlag(name .. "_YScale", pos.Y.Scale)
-            Rayfield:SetFlag(name .. "_YOffset", pos.Y.Offset)
+        if writefile and HttpService then
+            local dataToSave = {}
+            for name, data in pairs(RegisteredKeysByName) do
+                local pos = data.Btn.Position
+                dataToSave[name] = {
+                    XScale = pos.X.Scale,
+                    XOffset = pos.X.Offset,
+                    YScale = pos.Y.Scale,
+                    YOffset = pos.Y.Offset
+                }
+            end
+            writefile(CONFIG_FILE_NAME, HttpService:JSONEncode(dataToSave))
         end
     end)
 end
 
-local function LoadKeypadConfigFromRayfield()
+-- Hàm đọc vị trí các nút từ file JSON khi khởi động
+local function LoadPositionsFromFile()
     pcall(function()
-        for name, data in pairs(RegisteredKeysByName) do
-            local xS = Rayfield.Flags[name .. "_XScale"]
-            local xO = Rayfield.Flags[name .. "_XOffset"]
-            local yS = Rayfield.Flags[name .. "_YScale"]
-            local yO = Rayfield.Flags[name .. "_YOffset"]
-            
-            if xS and xO and yS and yO then
-                data.Btn.Position = UDim2.new(xS, xO, yS, yO)
+        if readfile and isfile and isfile(CONFIG_FILE_NAME) and HttpService then
+            local decoded = HttpService:JSONDecode(readfile(CONFIG_FILE_NAME))
+            if decoded then
+                for name, pos in pairs(decoded) do
+                    if RegisteredKeysByName[name] then
+                        RegisteredKeysByName[name].Btn.Position = UDim2.new(
+                            pos.XScale or 0, pos.XOffset or 0,
+                            pos.YScale or 0, pos.YOffset or 0
+                        )
+                    end
+                end
             end
         end
     end)
@@ -191,6 +196,7 @@ local function CreateCustomButton(name, text, defaultPos, widthMult, keyCodes, i
         end)
     end
 
+    -- Tính năng kéo thả (Drag Mode)
     local dragging = false
     local dragInput, dragStart, startPos
 
@@ -203,7 +209,7 @@ local function CreateCustomButton(name, text, defaultPos, widthMult, keyCodes, i
                 if input.UserInputState == Enum.UserInputState.End then
                     if dragging then
                         dragging = false
-                        SaveKeypadConfigToRayfield()
+                        SavePositionsToFile() -- Tự động lưu ngay khi thả tay ra
                     end
                 end
             end)
@@ -279,6 +285,7 @@ local function UpdateButtonStyles()
 end
 
 UpdateButtonStyles()
+LoadPositionsFromFile() -- Tải lại vị trí đã lưu từ file
 
 -------------------------------------------------
 -- KHỞI TẠO RAYFIELD GUI
@@ -287,11 +294,7 @@ local Window = Rayfield:CreateWindow({
    Name = "⚡ Super Fix Lag & Utilities",
    LoadingTitle = "Đang tải Giao Diện...",
    LoadingSubtitle = "by Roblox Studio",
-   ConfigurationSaving = { 
-       Enabled = true, 
-       FolderName = "FixLagConfigManager", 
-       FileName = "KeypadMasterConfig" 
-   },
+   ConfigurationSaving = { Enabled = false }, -- Tắt mặc định của Rayfield để dùng hệ thống file tự chế chuẩn hơn
    Discord = { Enabled = false },
    KeySystem = true,
    KeySettings = {
@@ -308,7 +311,6 @@ local Window = Rayfield:CreateWindow({
 task.spawn(function()
     repeat task.wait() until Window and Window.Enabled
     ScreenGui.Enabled = true
-    LoadKeypadConfigFromRayfield()
 end)
 
 local MainTab = Window:CreateTab("Main", 4483362458)
@@ -390,8 +392,8 @@ MainTab:CreateToggle({
        if Value then
            Rayfield:Notify({ Title = "Chỉnh vị trí", Content = "Đã BẬT: Hãy dùng tay kéo từng nút đến vị trí mong muốn!", Duration = 3 })
        else
-           SaveKeypadConfigToRayfield()
-           Rayfield:Notify({ Title = "Chỉnh vị trí", Content = "Đã TẮT: Đã lưu vị trí thành công.", Duration = 2 })
+           SavePositionsToFile()
+           Rayfield:Notify({ Title = "Chỉnh vị trí", Content = "Đã TẮT: Đã lưu vị trí vào file thành công.", Duration = 2 })
        end
    end,
 })
@@ -411,7 +413,7 @@ MainTab:CreateDropdown({
            CurrentShape = "Rounded"
        end
        UpdateButtonStyles()
-       SaveKeypadConfigToRayfield()
+       SavePositionsToFile()
    end,
 })
 
@@ -425,7 +427,7 @@ MainTab:CreateSlider({
    Callback = function(Value)
        BaseButtonSize = Value
        UpdateButtonStyles()
-       SaveKeypadConfigToRayfield()
+       SavePositionsToFile()
    end,
 })
 
@@ -433,8 +435,8 @@ MainTab:CreateButton({
    Name = "💾 Lưu Vị Trí Phím Thủ Công",
    Callback = function()
        PlayClick()
-       SaveKeypadConfigToRayfield()
-       Rayfield:Notify({ Title = "Thành công", Content = "Đã lưu bố cục thủ công vào Rayfield Config.", Duration = 2 })
+       SavePositionsToFile()
+       Rayfield:Notify({ Title = "Thành công", Content = "Đã lưu vị trí thủ công vào file.", Duration = 2 })
    end,
 })
 
