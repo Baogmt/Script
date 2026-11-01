@@ -222,6 +222,7 @@ CreateCustomButton("G", "G", UDim2.new(1, -130, 0.24, 0), 0.8, Enum.KeyCode.G)
 
 -- Cụm di chuyển cũ (WA, WD, A, S, D, SA, SD)
 CreateCustomButton("W", "W", UDim2.new(1, -210, 0.33, 0), 1, Enum.KeyCode.W)
+CreateCustomButton("O", "O", UDim2.new(1, -210, 0.33, 0), 1, Enum.KeyCode.O)
 
 CreateCustomButton("A", "A", UDim2.new(1, -215, 0.41, 0), 1, Enum.KeyCode.A)
 CreateCustomButton("S", "S", UDim2.new(1, -170, 0.41, 0), 1, Enum.KeyCode.S)
