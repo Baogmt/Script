@@ -1,4 +1,12 @@
-local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+local success, Rayfield = pcall(function()
+    return loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+end)
+
+if not success or not Rayfield then
+    warn("Không thể tải thư viện Rayfield!")
+    return
+end
+
 local SoundService = game:GetService("SoundService")
 local VirtualInputManager = game:GetService("VirtualInputManager")
 local UserInputService = game:GetService("UserInputService")
@@ -11,20 +19,20 @@ local LocalPlayer = Players.LocalPlayer
 local CONFIG_FILE_NAME = "VirtualKeypadPositions.json"
 
 -------------------------------------------------
--- HỆ THỐNG ÂM THANH (CLICK SOUND - ĐÃ TĂNG ÂM LƯỢNG)
+-- HỆ THỐNG ÂM THANH (CLICK SOUND)
 -------------------------------------------------
 local clickSound = Instance.new("Sound")
 clickSound.Name = "MenuClickSound"
 clickSound.SoundId = "rbxassetid://6895079853"
-clickSound.Volume = 1.5 -- Âm lượng cực lớn và rõ
+clickSound.Volume = 1.5
 clickSound.Parent = SoundService
 
 local function PlayClick()
-    clickSound:Play()
+    pcall(function() clickSound:Play() end)
 end
 
 -------------------------------------------------
--- HỆ THỐNG KEYSTROKES & PHÍM ẢO (SAVE/LOAD)
+-- HỆ THỐNG KEYSTROKES & PHÍM ẢO (AN TOÀN)
 -------------------------------------------------
 if CoreGui:FindFirstChild("VirtualKeypadGui") then
     CoreGui.VirtualKeypadGui:Destroy()
@@ -41,59 +49,51 @@ local RegisteredKeysByName = {}
 local CurrentShape = "Rounded"
 local BaseButtonSize = 35
 
--- Hàm lưu cấu hình vị trí các nút vào file JSON
+-- Hàm lưu cấu hình an toàn
 local function SaveKeypadConfig()
-    local configData = {
-        Shape = CurrentShape,
-        Size = BaseButtonSize,
-        Positions = {}
-    }
-    
-    for name, data in pairs(RegisteredKeysByName) do
-        local pos = data.Btn.Position
-        configData.Positions[name] = {
-            XScale = pos.X.Scale,
-            XOffset = pos.X.Offset,
-            YScale = pos.Y.Scale,
-            YOffset = pos.Y.Offset
-        }
-    end
-    
     pcall(function()
-        if writefile then
+        if writefile and HttpService then
+            local configData = {
+                Shape = CurrentShape,
+                Size = BaseButtonSize,
+                Positions = {}
+            }
+            for name, data in pairs(RegisteredKeysByName) do
+                local pos = data.Btn.Position
+                configData.Positions[name] = {
+                    XScale = pos.X.Scale, XOffset = pos.X.Offset,
+                    YScale = pos.Y.Scale, YOffset = pos.Y.Offset
+                }
+            end
             writefile(CONFIG_FILE_NAME, HttpService:JSONEncode(configData))
         end
     end)
 end
 
--- Hàm đọc cấu hình vị trí các nút từ file JSON
+-- Hàm đọc cấu hình an toàn
 local function LoadKeypadConfig()
-    if not readfile or not isfile or not isfile(CONFIG_FILE_NAME) then return end
-    
-    local success, result = pcall(function()
-        return HttpService:JSONDecode(readfile(CONFIG_FILE_NAME))
-    end)
-    
-    if success and result then
-        if result.Shape then CurrentShape = result.Shape end
-        if result.Size then BaseButtonSize = result.Size end
-        
-        if result.Positions then
-            for name, posData in pairs(result.Positions) do
-                if RegisteredKeysByName[name] then
-                    RegisteredKeysByName[name].Btn.Position = UDim2.new(
-                        posData.XScale or 1,
-                        posData.XOffset or 0,
-                        posData.YScale or 0.5,
-                        posData.YOffset or 0
-                    )
+    pcall(function()
+        if readfile and isfile and isfile(CONFIG_FILE_NAME) and HttpService then
+            local result = HttpService:JSONDecode(readfile(CONFIG_FILE_NAME))
+            if result then
+                if result.Shape then CurrentShape = result.Shape end
+                if result.Size then BaseButtonSize = result.Size end
+                if result.Positions then
+                    for name, posData in pairs(result.Positions) do
+                        if RegisteredKeysByName[name] then
+                            RegisteredKeysByName[name].Btn.Position = UDim2.new(
+                                posData.XScale or 1, posData.XOffset or 0,
+                                posData.YScale or 0.5, posData.YOffset or 0
+                            )
+                        end
+                    end
                 end
             end
         end
-    end
+    end)
 end
 
--- Hàm tạo phím Keystrokes (Hiệu ứng màu cầu vồng khi nhấn)
+-- Hàm tạo phím Keystrokes (Hiệu ứng Cầu Vồng)
 local function CreateCustomButton(name, text, defaultPos, widthMult, keyCodes, isToggle)
     local btn = Instance.new("TextButton")
     btn.Name = name
@@ -119,13 +119,14 @@ local function CreateCustomButton(name, text, defaultPos, widthMult, keyCodes, i
     local isActive = false
     local keys = typeof(keyCodes) == "table" and keyCodes or {keyCodes}
 
-    -- Vòng lặp tạo hiệu ứng màu Cầu Vồng (Rainbow) mượt mà khi nút đang sáng
     task.spawn(function()
         while true do
             if isActive then
-                local hue = (tick() % 5) / 5 -- Chu kỳ đổi màu 5 giây
-                btn.BackgroundColor3 = Color3.fromHSV(hue, 1, 1)
-                btn.BackgroundTransparency = 0.1
+                pcall(function()
+                    local hue = (tick() % 5) / 5
+                    btn.BackgroundColor3 = Color3.fromHSV(hue, 1, 1)
+                    btn.BackgroundTransparency = 0.1
+                end)
             end
             task.wait(0.03)
         end
@@ -146,7 +147,7 @@ local function CreateCustomButton(name, text, defaultPos, widthMult, keyCodes, i
             toggleState = not toggleState
             SetVisualState(toggleState)
             for _, k in ipairs(keys) do
-                VirtualInputManager:SendKeyEvent(toggleState, k, false, game)
+                pcall(function() VirtualInputManager:SendKeyEvent(toggleState, k, false, game) end)
             end
         end)
     else
@@ -157,7 +158,7 @@ local function CreateCustomButton(name, text, defaultPos, widthMult, keyCodes, i
                 PlayClick()
                 SetVisualState(true)
                 for _, k in ipairs(keys) do
-                    VirtualInputManager:SendKeyEvent(true, k, false, game)
+                    pcall(function() VirtualInputManager:SendKeyEvent(true, k, false, game) end)
                 end
             end
         end)
@@ -168,7 +169,7 @@ local function CreateCustomButton(name, text, defaultPos, widthMult, keyCodes, i
                     isDown = false
                     SetVisualState(false)
                     for _, k in ipairs(keys) do
-                        VirtualInputManager:SendKeyEvent(false, k, false, game)
+                        pcall(function() VirtualInputManager:SendKeyEvent(false, k, false, game) end)
                     end
                 end
             end)
@@ -179,18 +180,14 @@ local function CreateCustomButton(name, text, defaultPos, widthMult, keyCodes, i
         UserInputService.InputBegan:Connect(function(input, gameProcessed)
             if not gameProcessed then
                 for _, k in ipairs(keys) do
-                    if input.KeyCode == k then
-                        SetVisualState(true)
-                    end
+                    if input.KeyCode == k then SetVisualState(true) end
                 end
             end
         end)
 
         UserInputService.InputEnded:Connect(function(input)
             for _, k in ipairs(keys) do
-                if input.KeyCode == k then
-                    SetVisualState(false)
-                end
+                if input.KeyCode == k then SetVisualState(false) end
             end
         end)
     end
@@ -224,27 +221,20 @@ local function CreateCustomButton(name, text, defaultPos, widthMult, keyCodes, i
         if input == dragInput and dragging and IsEditingLayout then
             local delta = input.Position - dragStart
             btn.Position = UDim2.new(
-                startPos.X.Scale, 
-                startPos.X.Offset + delta.X, 
-                startPos.Y.Scale, 
-                startPos.Y.Offset + delta.Y
+                startPos.X.Scale, startPos.X.Offset + delta.X, 
+                startPos.Y.Scale, startPos.Y.Offset + delta.Y
             )
         end
     end)
 
-    local keyData = {
-        Name = name,
-        Btn = btn,
-        Corner = corner,
-        WidthMult = widthMult
-    }
+    local keyData = { Name = name, Btn = btn, Corner = corner, WidthMult = widthMult }
     table.insert(RegisteredKeys, keyData)
     RegisteredKeysByName[name] = keyData
     return keyData
 end
 
 -------------------------------------------------
--- 📌 TẠO CÁC NÚT KEYSTROKES TRÊN MÀN HÌNH
+-- 📌 TẠO CÁC NÚT TRÊN MÀN HÌNH
 -------------------------------------------------
 CreateCustomButton("Num1", "1", UDim2.new(1, -250, 0.15, 0), 0.8, Enum.KeyCode.One)
 CreateCustomButton("Num2", "2", UDim2.new(1, -210, 0.15, 0), 0.8, Enum.KeyCode.Two)
