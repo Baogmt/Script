@@ -2,7 +2,7 @@
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
-   Name = "Instant Twisted & Fix Lag Script",
+   Name = "Instant Twisted & Ultimate Script",
    LoadingTitle = "Đang tải Script...",
    LoadingSubtitle = "By AI Collaborator",
    ConfigurationSaving = {
@@ -31,7 +31,7 @@ task.spawn(function()
                for _, descendant in ipairs(gui:GetDescendants()) do
                   if descendant:IsA("UIStroke") then
                      descendant.Color = rainbowColor
-                  elseif descendant:IsA("TextLabel") and (descendant.Text == "Instant Twisted & Fix Lag Script" or descendant.Text == "Đang tải Script...") then
+                  elseif descendant:IsA("TextLabel") and (descendant.Text == "Instant Twisted & Ultimate Script" or descendant.Text == "Đang tải Script...") then
                      descendant.TextColor3 = rainbowColor
                   end
                end
@@ -73,15 +73,13 @@ local function instantTwisted()
 end
 
 MainTab:CreateButton({
-   Name = "Instant Twisted",
+   Name = "Instant Twisted (Menu)",
    Callback = function()
       instantTwisted()
    end,
 })
 
--- Hàm tính năng Fix Lag
 local function applyFixLag()
-   -- 1. Tối ưu hóa Lighting (Ánh sáng)
    Lighting.GlobalShadows = false
    Lighting.FogEnd = 9e9
    Lighting.Brightness = 2
@@ -91,7 +89,6 @@ local function applyFixLag()
       end
    end
 
-   -- 2. Tắt hiệu ứng cỏ và vật thể nặng của Terrain
    if Terrain then
       Terrain.WaterWaveSize = 0
       Terrain.WaterWaveSpeed = 0
@@ -99,7 +96,6 @@ local function applyFixLag()
       Terrain.WaterReflectance = 0
    end
 
-   -- 3. Tối ưu hóa toàn bộ Part/Mesh trong map (Giảm tải đồ họa, tăng FPS)
    for _, v in ipairs(workspace:GetDescendants()) do
       if v:IsA("BasePart") and not v.Parent:FindFirstChild("Humanoid") then
          v.Material = Enum.Material.SmoothPlastic
@@ -108,19 +104,18 @@ local function applyFixLag()
             v.TextureID = ""
          end
       elseif v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Fire") or v:IsA("Smoke") or v:IsA("Sparkles") then
-         v:Destroy() -- Xóa hiệu ứng hạt gây tụt FPS
+         v:Destroy()
       end
    end
 
    Rayfield:Notify({
       Title = "Fix Lag Thành Công!",
-      Content = "Đã tối ưu hóa đồ họa và dọn dẹp hiệu ứng để tăng FPS.",
+      Content = "Đã tối ưu hóa đồ họa để tăng FPS.",
       Duration = 3,
       Image = 4483362458,
    })
 end
 
--- Nút bấm Fix Lag trong Menu
 MainTab:CreateButton({
    Name = "Fix Lag (Tăng FPS)",
    Callback = function()
@@ -129,75 +124,151 @@ MainTab:CreateButton({
 })
 
 ---------------------------------------------------------
--- TAB 2: SKIN (FAKE HEADLESS & KORBLOX)
+-- TAB 2: CÀI ĐẶT NÚT NỔI (KÍCH CỠ)
+---------------------------------------------------------
+local SettingsTab = Window:CreateTab("Nút Nổi", 4483362458)
+local currentButtonSize = 45
+
+SettingsTab:CreateSlider({
+   Name = "Kích Cỡ Nút Nổi",
+   Range = {30, 90},
+   Increment = 1,
+   CurrentValue = 45,
+   Flag = "ButtonSizeSlider",
+   Callback = function(Value)
+      currentButtonSize = Value
+      for _, gui in ipairs(game.CoreGui:GetChildren()) do
+         if gui.Name == "MultiButtonsGui" then
+            for _, btn in ipairs(gui:GetChildren()) do
+               if btn:IsA("TextButton") then
+                  btn.Size = UDim2.new(0, Value, 0, Value)
+               end
+            end
+         end
+      end
+   end,
+})
+
+---------------------------------------------------------
+-- TAB 3: SKIN (HEADLESS & KORBLOX - PERSISTENT)
 ---------------------------------------------------------
 local SkinTab = Window:CreateTab("Skin", 4483362458)
 
 local headlessEnabled = false
 local korbloxEnabled = false
 
+-- Hàm Fake Headless: Dịch chuyển đầu xuống dưới đất để tránh kéo dài cổ
 local function applyHeadless(char)
    if not char then return end
-   local head = char:FindFirstChild("Head")
-   if head then
+   local head = char:WaitForChild("Head", 3)
+   local rootPart = char:WaitForChild("HumanoidRootPart", 3)
+   if head and rootPart then
       if headlessEnabled then
+         head.CFrame = rootPart.CFrame + Vector3.new(0, -50, 0)
+         head.CanCollide = false
          head.Transparency = 1
-         if head:FindFirstChildOfClass("Decal") then
-            head:FindFirstChildOfClass("Decal").Transparency = 1
+         for _, v in ipairs(head:GetChildren()) do
+            if v:IsA("Decal") or v:IsA("SpecialMesh") then
+               v.Transparency = 1
+            end
          end
+         local neck = head:FindFirstChild("Neck")
+         if neck then neck.Enabled = false end
       else
+         local neck = head:FindFirstChild("Neck")
+         if neck then neck.Enabled = true end
          head.Transparency = 0
-         if head:FindFirstChildOfClass("Decal") then
-            head:FindFirstChildOfClass("Decal").Transparency = 0
+         head.CanCollide = true
+         for _, v in ipairs(head:GetChildren()) do
+            if v:IsA("Decal") or v:IsA("SpecialMesh") then
+               v.Transparency = 0
+            end
          end
       end
    end
 end
 
+-- Hàm apply Korblox chuẩn R6/R15
 local function applyKorblox(char)
    if not char then return end
-   local rightLeg = char:FindFirstChild("Right Leg") or char:FindFirstChild("RightLowerLeg")
-   if rightLeg then
-      if korbloxEnabled then
-         if char:FindFirstChild("Right Leg") then
-            char["Right Leg"].Transparency = 1
-         else
-            if char:FindFirstChild("RightUpperLeg") then char.RightUpperLeg.Transparency = 1 end
-            if char:FindFirstChild("RightLowerLeg") then char.RightLowerLeg.Transparency = 1 end
-            if char:FindFirstChild("RightFoot") then char.RightFoot.Transparency = 1 end
-         end
-         
-         if not char:FindFirstChild("FakeKorblox") then
-            local korbloxPart = Instance.new("SpecialMesh")
-            korbloxPart.Name = "KorbloxMesh"
-            korbloxPart.MeshId = "rbxassetid://139607718"
-            korbloxPart.TextureId = "rbxassetid://139607673"
-            korbloxPart.Scale = Vector3.new(1, 1, 1)
-            
-            local targetPart = char:FindFirstChild("Right Leg") or char:FindFirstChild("RightLowerLeg")
-            if targetPart then
-               korbloxPart.Parent = targetPart
+   local humanoid = char:WaitForChild("Humanoid", 3)
+   if not humanoid then return end
+
+   if korbloxEnabled then
+      if humanoid.RigType == Enum.HumanoidRigType.R6 then
+         local rightLeg = char:WaitForChild("Right Leg", 3)
+         if rightLeg then
+            rightLeg.Transparency = 1
+            if not rightLeg:FindFirstChild("KorbloxMeshR6") then
+               local mesh = Instance.new("SpecialMesh")
+               mesh.Name = "KorbloxMeshR6"
+               mesh.MeshId = "rbxassetid://139607718"
+               mesh.TextureId = "rbxassetid://139607673"
+               mesh.Scale = Vector3.new(1, 1, 1)
+               mesh.Parent = rightLeg
             end
          end
       else
-         if char:FindFirstChild("Right Leg") then
-            char["Right Leg"].Transparency = 0
-         else
-            if char:FindFirstChild("RightUpperLeg") then char.RightUpperLeg.Transparency = 0 end
-            if char:FindFirstChild("RightLowerLeg") then char.RightLowerLeg.Transparency = 0 end
-            if char:FindFirstChild("RightFoot") then char.RightFoot.Transparency = 0 end
+         for _, partName in ipairs({"RightUpperLeg", "RightLowerLeg", "RightFoot"}) do
+            local part = char:WaitForChild(partName, 3)
+            if part then part.Transparency = 1 end
          end
-         
-         local targetPart = char:FindFirstChild("Right Leg") or char:FindFirstChild("RightLowerLeg")
-         if targetPart and targetPart:FindFirstChild("KorbloxMesh") then
-            targetPart.KorbloxMesh:Destroy()
+         local rightLower = char:WaitForChild("RightLowerLeg", 3)
+         if rightLower and not rightLower:FindFirstChild("KorbloxMeshR15") then
+            local mesh = Instance.new("SpecialMesh")
+            mesh.Name = "KorbloxMeshR15"
+            mesh.MeshId = "rbxassetid://139607718"
+            mesh.TextureId = "rbxassetid://139607673"
+            mesh.Scale = Vector3.new(1, 1, 1)
+            mesh.Parent = rightLower
          end
+      end
+   else
+      if humanoid.RigType == Enum.HumanoidRigType.R6 then
+         local rightLeg = char:FindFirstChild("Right Leg")
+         if rightLeg then
+            rightLeg.Transparency = 0
+            if rightLeg:FindFirstChild("KorbloxMeshR6") then rightLeg.KorbloxMeshR6:Destroy() end
+         end
+      else
+         for _, partName in ipairs({"RightUpperLeg", "RightLowerLeg", "RightFoot"}) do
+            local part = char:FindFirstChild(partName)
+            if part then part.Transparency = 0 end
+         end
+         local rightLower = char:FindFirstChild("RightLowerLeg")
+         if rightLower and rightLower:FindFirstChild("KorbloxMeshR15") then rightLower.KorbloxMeshR15:Destroy() end
       end
    end
 end
 
+-- Lắng nghe hồi sinh để giữ nguyên skin khi chết/reset
+local function setupCharacter(char)
+   char:WaitForChild("Humanoid", 3)
+   task.wait(0.3)
+   if headlessEnabled then applyHeadless(char) end
+   if korbloxEnabled then applyKorblox(char) end
+   
+   char.ChildAdded:Connect(function(child)
+      if child.Name == "Head" and headlessEnabled then
+         task.wait(0.1)
+         applyHeadless(char)
+      elseif (child.Name == "Right Leg" or child.Name == "RightLowerLeg") and korbloxEnabled then
+         task.wait(0.1)
+         applyKorblox(char)
+      end
+   end)
+end
+
+if LocalPlayer.Character then
+   setupCharacter(LocalPlayer.Character)
+end
+
+LocalPlayer.CharacterAdded:Connect(function(char)
+   setupCharacter(char)
+end)
+
 SkinTab:CreateToggle({
-   Name = "Fake Headless",
+   Name = "Fake Headless (Giữ khi chết/reset)",
    CurrentValue = false,
    Flag = "HeadlessToggle",
    Callback = function(Value)
@@ -208,7 +279,7 @@ SkinTab:CreateToggle({
 })
 
 SkinTab:CreateToggle({
-   Name = "Fake Korblox (Right Leg)",
+   Name = "Fake Korblox (Giữ khi chết/reset)",
    CurrentValue = false,
    Flag = "KorbloxToggle",
    Callback = function(Value)
@@ -218,26 +289,11 @@ SkinTab:CreateToggle({
    end,
 })
 
-LocalPlayer.CharacterAndAdded:Connect(function(char)
-   char:WaitForChild("Humanoid")
-   task.wait(0.5)
-   if headlessEnabled then applyHeadless(char) end
-   if korbloxEnabled then applyKorblox(char) end
-end)
-
--- Sửa lại sự kiện CharacterAdded cho đúng chuẩn
-Players.LocalPlayer.CharacterAdded:Connect(function(char)
-   char:WaitForChild("Humanoid")
-   task.wait(0.5)
-   if headlessEnabled then applyHeadless(char) end
-   if korbloxEnabled then applyKorblox(char) end
-end)
-
 ---------------------------------------------------------
--- NÚT NỔI BẤM Q (FLOATING BUTTON)
+-- TẠO CÁC NÚT NỔI CHẾ ĐỘ HOLD (F, G, Q, Sp, 1, 2, 3, 4, LC)
 ---------------------------------------------------------
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "TwistedFloatingGui"
+ScreenGui.Name = "MultiButtonsGui"
 ScreenGui.ResetOnSpawn = false
 
 if syn and syn.protect_gui then
@@ -249,63 +305,145 @@ else
    ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 end
 
-local FloatingBtn = Instance.new("TextButton")
-FloatingBtn.Name = "ActionBtn"
-FloatingBtn.Size = UDim2.new(0, 45, 0, 45)
-FloatingBtn.Position = UDim2.new(0.1, 0, 0.2, 0)
-FloatingBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-FloatingBtn.Text = "Q"
-FloatingBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-FloatingBtn.TextSize = 18
-FloatingBtn.Font = Enum.Font.SourceSansBold
-FloatingBtn.Parent = ScreenGui
+local function createHoldButton(name, text, defaultPosition, onHoldStart, onHoldEnd)
+   local btn = Instance.new("TextButton")
+   btn.Name = name
+   btn.Size = UDim2.new(0, currentButtonSize, 0, currentButtonSize)
+   btn.Position = defaultPosition
+   btn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+   btn.Text = text
+   btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+   btn.TextSize = 16
+   btn.Font = Enum.Font.SourceSansBold
+   btn.Parent = ScreenGui
 
-local UICorner = Instance.new("UICorner")
-UICorner.CornerRadius = UDim.new(0.5, 0)
-UICorner.Parent = FloatingBtn
+   local corner = Instance.new("UICorner")
+   corner.CornerRadius = UDim.new(0.5, 0)
+   corner.Parent = btn
 
-local UIStroke = Instance.new("UIStroke")
-UIStroke.Thickness = 2.5
-UIStroke.Parent = FloatingBtn
+   local stroke = Instance.new("UIStroke")
+   stroke.Thickness = 2
+   stroke.Parent = btn
 
-task.spawn(function()
-   while true do
-      UIStroke.Color = Color3.fromHSV(tick() % 5 / 5, 1, 1)
-      task.wait(0.05)
-   end
+   task.spawn(function()
+      while true do
+         stroke.Color = Color3.fromHSV(tick() % 5 / 5, 1, 1)
+         task.wait(0.05)
+      end
+   end)
+
+   local dragging = false
+   local dragStart = Vector2.new(0, 0)
+   local startPos = UDim2.new(0, 0, 0, 0)
+   local isHolding = false
+
+   btn.InputBegan:Connect(function(input)
+      if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+         dragging = true
+         dragStart = input.Position
+         startPos = btn.Position
+         
+         isHolding = true
+         if onHoldStart then onHoldStart() end
+
+         input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+               dragging = false
+               if isHolding then
+                  isHolding = false
+                  if onHoldEnd then onHoldEnd() end
+               end
+            end
+         end)
+      end
+   end)
+
+   UserInputService.InputChanged:Connect(function(input)
+      if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+         local delta = input.Position - dragStart
+         btn.Position = UDim2.new(
+            startPos.X.Scale, 
+            startPos.X.Offset + delta.X, 
+            startPos.Y.Scale, 
+            startPos.Y.Offset + delta.Y
+         )
+      end
+   end)
+
+   UserInputService.InputEnded:Connect(function(input)
+      if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+         if isHolding then
+            isHolding = false
+            dragging = false
+            if onHoldEnd then onHoldEnd() end
+         end
+      end
+   end)
+
+   return btn
+end
+
+-- Tạo các nút nổi F, G, Q, Sp, 1, 2, 3, 4, LC
+createHoldButton("BtnF", "F", UDim2.new(0.05, 0, 0.12, 0), function()
+   VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.F, false, game)
+end, function()
+   VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.F, false, game)
 end)
 
--- Kéo thả nút nổi Q
-local draggingQ, dragInputQ, dragStartQ, startPosQ
-FloatingBtn.InputBegan:Connect(function(input)
-   if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-      draggingQ = true
-      dragStartQ = input.Position
-      startPosQ = FloatingBtn.Position
-      input.Changed:Connect(function()
-         if input.UserInputState == Enum.UserInputState.End then draggingQ = false end
-      end)
-   end
-end)
-FloatingBtn.InputChanged:Connect(function(input)
-   if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-      dragInputQ = input
-   end
-end)
-UserInputService.InputChanged:Connect(function(input)
-   if input == dragInputQ and draggingQ then
-      local delta = input.Position - dragStartQ
-      FloatingBtn.Position = UDim2.new(startPosQ.X.Scale, startPosQ.X.Offset + delta.X, startPosQ.Y.Scale, startPosQ.Y.Offset + delta.Y)
-   end
+createHoldButton("BtnG", "G", UDim2.new(0.05, 0, 0.20, 0), function()
+   VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.G, false, game)
+end, function()
+   VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.G, false, game)
 end)
 
-FloatingBtn.MouseButton1Click:Connect(function()
+createHoldButton("BtnQ", "Q", UDim2.new(0.05, 0, 0.28, 0), function()
    instantTwisted()
+   VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Q, false, game)
+end, function()
+   VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Q, false, game)
+end)
+
+createHoldButton("BtnSpace", "Sp", UDim2.new(0.05, 0, 0.36, 0), function()
+   VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Space, false, game)
+end, function()
+   VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Space, false, game)
+end)
+
+createHoldButton("Btn1", "1", UDim2.new(0.05, 0, 0.44, 0), function()
+   VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.One, false, game)
+end, function()
+   VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.One, false, game)
+end)
+
+createHoldButton("Btn2", "2", UDim2.new(0.05, 0, 0.52, 0), function()
+   VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Two, false, game)
+end, function()
+   VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Two, false, game)
+end)
+
+createHoldButton("Btn3", "3", UDim2.new(0.05, 0, 0.60, 0), function()
+   VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Three, false, game)
+end, function()
+   VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Three, false, game)
+end)
+
+createHoldButton("Btn4", "4", UDim2.new(0.05, 0, 0.68, 0), function()
+   VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Four, false, game)
+end, function()
+   VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Four, false, game)
+end)
+
+createHoldButton("BtnMouse", "LC", UDim2.new(0.05, 0, 0.76, 0), function()
+   local mouseX, mouseY = workspace.CurrentCamera.ViewportSize.X / 2, workspace.CurrentCamera.ViewportSize.Y / 2
+   VirtualInputManager:SendMouseButtonEvent(mouseX, mouseY, 0, true, game, 1)
+end, function()
+   local mouseX, mouseY = workspace.CurrentCamera.ViewportSize.X / 2, workspace.CurrentCamera.ViewportSize.Y / 2
+   VirtualInputManager:SendMouseButtonEvent(mouseX, mouseY, 0, false, game, 1)
 end)
 
 Rayfield:Notify({
    Title = "Thành công!",
-   Content = "Đã cập nhật script: Xóa Aimlock và thêm Fix Lag!",
+   Content = "Đã tổng hợp toàn bộ tính năng và fix lỗi thành công!",
    Duration = 3,
    Image = 4483362458,
 })
