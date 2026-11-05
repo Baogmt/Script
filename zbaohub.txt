@@ -1,449 +1,521 @@
--- Tải thư viện Rayfield UI
-local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+local success, Rayfield = pcall(function()
+    return loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+end)
 
-local Window = Rayfield:CreateWindow({
-   Name = "Instant Twisted & Ultimate Script",
-   LoadingTitle = "Đang tải Script...",
-   LoadingSubtitle = "By AI Collaborator",
-   ConfigurationSaving = {
-      Enabled = false,
-   },
-   KeySystem = false,
-})
+if not success or not Rayfield then
+    warn("Không thể tải thư viện Rayfield!")
+    return
+end
 
--- Services
-local Players = game:GetService("Players")
+local SoundService = game:GetService("SoundService")
 local VirtualInputManager = game:GetService("VirtualInputManager")
 local UserInputService = game:GetService("UserInputService")
-local Lighting = game:GetService("Lighting")
-local Terrain = workspace:FindFirstChildOfClass("Terrain")
+local RunService = game:GetService("RunService")
+local HttpService = game:GetService("HttpService")
+local Players = game:GetService("Players")
+local CoreGui = game:GetService("CoreGui")
+
 local LocalPlayer = Players.LocalPlayer
+local CONFIG_FILE_NAME = "VirtualKeypadPositions.json"
 
----------------------------------------------------------
--- HIỆU ỨNG CẦU VÒNG (RGB RAINBOW) CHO MENU
----------------------------------------------------------
-task.spawn(function()
-   while true do
-      local rainbowColor = Color3.fromHSV(tick() % 5 / 5, 1, 1)
-      pcall(function()
-         for _, gui in ipairs(game.CoreGui:GetChildren()) do
-            if gui.Name == "Rayfield" then
-               for _, descendant in ipairs(gui:GetDescendants()) do
-                  if descendant:IsA("UIStroke") then
-                     descendant.Color = rainbowColor
-                  elseif descendant:IsA("TextLabel") and (descendant.Text == "Instant Twisted & Ultimate Script" or descendant.Text == "Đang tải Script...") then
-                     descendant.TextColor3 = rainbowColor
-                  end
-               end
-            end
-         end
-         
-         for _, gui in ipairs(game.CoreGui:GetChildren()) do
-            if gui.Name == "Rayfield" then
-               local openButton = gui:FindFirstChild("OpenButton", true)
-               if openButton and openButton:IsA("TextButton") then
-                  openButton.Text = "Open Menu Cầu Vồng"
-                  openButton.TextColor3 = rainbowColor
-               end
-            end
-         end
-      end)
-      task.wait(0.05)
-   end
-end)
+-------------------------------------------------
+-- HỆ THỐNG ÂM THANH (CLICK SOUND)
+-------------------------------------------------
+local clickSound = Instance.new("Sound")
+clickSound.Name = "MenuClickSound"
+clickSound.SoundId = "rbxassetid://6895079853"
+clickSound.Volume = 1.5
+clickSound.Parent = SoundService
 
----------------------------------------------------------
--- TAB 1: CHÍNH (INSTANT TWISTED & FIX LAG)
----------------------------------------------------------
-local MainTab = Window:CreateTab("Chính", 4483362458)
-
-local function getRootPart()
-   local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-   return char:WaitForChild("HumanoidRootPart", 5)
+local function PlayClick()
+    pcall(function() clickSound:Play() end)
 end
 
-local function instantTwisted()
-   local rootPart = getRootPart()
-   if rootPart then
-      rootPart.CFrame = rootPart.CFrame * CFrame.new(0, 0, 4)
-      VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Q, false, game)
-      task.wait(0.05)
-      VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Q, false, game)
-   end
+-------------------------------------------------
+-- HỆ THỐNG PHÍM ẢO & LƯU CONFIG (AN TOÀN)
+-------------------------------------------------
+if CoreGui:FindFirstChild("VirtualKeypadGui") then
+    CoreGui.VirtualKeypadGui:Destroy()
 end
 
-MainTab:CreateButton({
-   Name = "Instant Twisted (Menu)",
-   Callback = function()
-      instantTwisted()
-   end,
-})
-
-local function applyFixLag()
-   Lighting.GlobalShadows = false
-   Lighting.FogEnd = 9e9
-   Lighting.Brightness = 2
-   for _, v in ipairs(Lighting:GetChildren()) do
-      if v:IsA("PostEffect") or v:IsA("Sky") or v:IsA("Atmosphere") then
-         v:Destroy()
-      end
-   end
-
-   if Terrain then
-      Terrain.WaterWaveSize = 0
-      Terrain.WaterWaveSpeed = 0
-      Terrain.WaterTransparency = 1
-      Terrain.WaterReflectance = 0
-   end
-
-   for _, v in ipairs(workspace:GetDescendants()) do
-      if v:IsA("BasePart") and not v.Parent:FindFirstChild("Humanoid") then
-         v.Material = Enum.Material.SmoothPlastic
-         v.Reflectance = 0
-         if v:IsA("MeshPart") then
-            v.TextureID = ""
-         end
-      elseif v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Fire") or v:IsA("Smoke") or v:IsA("Sparkles") then
-         v:Destroy()
-      end
-   end
-
-   Rayfield:Notify({
-      Title = "Fix Lag Thành Công!",
-      Content = "Đã tối ưu hóa đồ họa để tăng FPS.",
-      Duration = 3,
-      Image = 4483362458,
-   })
-end
-
-MainTab:CreateButton({
-   Name = "Fix Lag (Tăng FPS)",
-   Callback = function()
-      applyFixLag()
-   end,
-})
-
----------------------------------------------------------
--- TAB 2: CÀI ĐẶT NÚT NỔI (KÍCH CỠ)
----------------------------------------------------------
-local SettingsTab = Window:CreateTab("Nút Nổi", 4483362458)
-local currentButtonSize = 45
-
-SettingsTab:CreateSlider({
-   Name = "Kích Cỡ Nút Nổi",
-   Range = {30, 90},
-   Increment = 1,
-   CurrentValue = 45,
-   Flag = "ButtonSizeSlider",
-   Callback = function(Value)
-      currentButtonSize = Value
-      for _, gui in ipairs(game.CoreGui:GetChildren()) do
-         if gui.Name == "MultiButtonsGui" then
-            for _, btn in ipairs(gui:GetChildren()) do
-               if btn:IsA("TextButton") then
-                  btn.Size = UDim2.new(0, Value, 0, Value)
-               end
-            end
-         end
-      end
-   end,
-})
-
----------------------------------------------------------
--- TAB 3: SKIN (HEADLESS & KORBLOX - PERSISTENT)
----------------------------------------------------------
-local SkinTab = Window:CreateTab("Skin", 4483362458)
-
-local headlessEnabled = false
-local korbloxEnabled = false
-
--- Hàm Fake Headless: Dịch chuyển đầu xuống dưới đất để tránh kéo dài cổ
-local function applyHeadless(char)
-   if not char then return end
-   local head = char:WaitForChild("Head", 3)
-   local rootPart = char:WaitForChild("HumanoidRootPart", 3)
-   if head and rootPart then
-      if headlessEnabled then
-         head.CFrame = rootPart.CFrame + Vector3.new(0, -50, 0)
-         head.CanCollide = false
-         head.Transparency = 1
-         for _, v in ipairs(head:GetChildren()) do
-            if v:IsA("Decal") or v:IsA("SpecialMesh") then
-               v.Transparency = 1
-            end
-         end
-         local neck = head:FindFirstChild("Neck")
-         if neck then neck.Enabled = false end
-      else
-         local neck = head:FindFirstChild("Neck")
-         if neck then neck.Enabled = true end
-         head.Transparency = 0
-         head.CanCollide = true
-         for _, v in ipairs(head:GetChildren()) do
-            if v:IsA("Decal") or v:IsA("SpecialMesh") then
-               v.Transparency = 0
-            end
-         end
-      end
-   end
-end
-
--- Hàm apply Korblox chuẩn R6/R15
-local function applyKorblox(char)
-   if not char then return end
-   local humanoid = char:WaitForChild("Humanoid", 3)
-   if not humanoid then return end
-
-   if korbloxEnabled then
-      if humanoid.RigType == Enum.HumanoidRigType.R6 then
-         local rightLeg = char:WaitForChild("Right Leg", 3)
-         if rightLeg then
-            rightLeg.Transparency = 1
-            if not rightLeg:FindFirstChild("KorbloxMeshR6") then
-               local mesh = Instance.new("SpecialMesh")
-               mesh.Name = "KorbloxMeshR6"
-               mesh.MeshId = "rbxassetid://139607718"
-               mesh.TextureId = "rbxassetid://139607673"
-               mesh.Scale = Vector3.new(1, 1, 1)
-               mesh.Parent = rightLeg
-            end
-         end
-      else
-         for _, partName in ipairs({"RightUpperLeg", "RightLowerLeg", "RightFoot"}) do
-            local part = char:WaitForChild(partName, 3)
-            if part then part.Transparency = 1 end
-         end
-         local rightLower = char:WaitForChild("RightLowerLeg", 3)
-         if rightLower and not rightLower:FindFirstChild("KorbloxMeshR15") then
-            local mesh = Instance.new("SpecialMesh")
-            mesh.Name = "KorbloxMeshR15"
-            mesh.MeshId = "rbxassetid://139607718"
-            mesh.TextureId = "rbxassetid://139607673"
-            mesh.Scale = Vector3.new(1, 1, 1)
-            mesh.Parent = rightLower
-         end
-      end
-   else
-      if humanoid.RigType == Enum.HumanoidRigType.R6 then
-         local rightLeg = char:FindFirstChild("Right Leg")
-         if rightLeg then
-            rightLeg.Transparency = 0
-            if rightLeg:FindFirstChild("KorbloxMeshR6") then rightLeg.KorbloxMeshR6:Destroy() end
-         end
-      else
-         for _, partName in ipairs({"RightUpperLeg", "RightLowerLeg", "RightFoot"}) do
-            local part = char:FindFirstChild(partName)
-            if part then part.Transparency = 0 end
-         end
-         local rightLower = char:FindFirstChild("RightLowerLeg")
-         if rightLower and rightLower:FindFirstChild("KorbloxMeshR15") then rightLower.KorbloxMeshR15:Destroy() end
-      end
-   end
-end
-
--- Lắng nghe hồi sinh để giữ nguyên skin khi chết/reset
-local function setupCharacter(char)
-   char:WaitForChild("Humanoid", 3)
-   task.wait(0.3)
-   if headlessEnabled then applyHeadless(char) end
-   if korbloxEnabled then applyKorblox(char) end
-   
-   char.ChildAdded:Connect(function(child)
-      if child.Name == "Head" and headlessEnabled then
-         task.wait(0.1)
-         applyHeadless(char)
-      elseif (child.Name == "Right Leg" or child.Name == "RightLowerLeg") and korbloxEnabled then
-         task.wait(0.1)
-         applyKorblox(char)
-      end
-   end)
-end
-
-if LocalPlayer.Character then
-   setupCharacter(LocalPlayer.Character)
-end
-
-LocalPlayer.CharacterAdded:Connect(function(char)
-   setupCharacter(char)
-end)
-
-SkinTab:CreateToggle({
-   Name = "Fake Headless (Giữ khi chết/reset)",
-   CurrentValue = false,
-   Flag = "HeadlessToggle",
-   Callback = function(Value)
-      headlessEnabled = Value
-      local char = LocalPlayer.Character
-      if char then applyHeadless(char) end
-   end,
-})
-
-SkinTab:CreateToggle({
-   Name = "Fake Korblox (Giữ khi chết/reset)",
-   CurrentValue = false,
-   Flag = "KorbloxToggle",
-   Callback = function(Value)
-      korbloxEnabled = Value
-      local char = LocalPlayer.Character
-      if char then applyKorblox(char) end
-   end,
-})
-
----------------------------------------------------------
--- TẠO CÁC NÚT NỔI CHẾ ĐỘ HOLD (F, G, Q, Sp, 1, 2, 3, 4, LC)
----------------------------------------------------------
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "MultiButtonsGui"
-ScreenGui.ResetOnSpawn = false
+ScreenGui.Name = "VirtualKeypadGui"
+ScreenGui.Parent = CoreGui
+ScreenGui.Enabled = false
 
-if syn and syn.protect_gui then
-   syn.protect_gui(ScreenGui)
-   ScreenGui.Parent = game.CoreGui
-elseif gethui then
-   ScreenGui.Parent = gethui()
-else
-   ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
-end
+local IsEditingLayout = false
+local RegisteredKeys = {}
+local RegisteredKeysByName = {}
+local CurrentShape = "Rounded"
+local BaseButtonSize = 35
 
-local function createHoldButton(name, text, defaultPosition, onHoldStart, onHoldEnd)
-   local btn = Instance.new("TextButton")
-   btn.Name = name
-   btn.Size = UDim2.new(0, currentButtonSize, 0, currentButtonSize)
-   btn.Position = defaultPosition
-   btn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-   btn.Text = text
-   btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-   btn.TextSize = 16
-   btn.Font = Enum.Font.SourceSansBold
-   btn.Parent = ScreenGui
-
-   local corner = Instance.new("UICorner")
-   corner.CornerRadius = UDim.new(0.5, 0)
-   corner.Parent = btn
-
-   local stroke = Instance.new("UIStroke")
-   stroke.Thickness = 2
-   stroke.Parent = btn
-
-   task.spawn(function()
-      while true do
-         stroke.Color = Color3.fromHSV(tick() % 5 / 5, 1, 1)
-         task.wait(0.05)
-      end
-   end)
-
-   local dragging = false
-   local dragStart = Vector2.new(0, 0)
-   local startPos = UDim2.new(0, 0, 0, 0)
-   local isHolding = false
-
-   btn.InputBegan:Connect(function(input)
-      if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-         dragging = true
-         dragStart = input.Position
-         startPos = btn.Position
-         
-         isHolding = true
-         if onHoldStart then onHoldStart() end
-
-         input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then
-               dragging = false
-               if isHolding then
-                  isHolding = false
-                  if onHoldEnd then onHoldEnd() end
-               end
+-- Hàm lưu cấu hình an toàn
+local function SaveKeypadConfig()
+    pcall(function()
+        if writefile and HttpService then
+            local configData = {
+                Shape = CurrentShape,
+                Size = BaseButtonSize,
+                Positions = {}
+            }
+            for name, data in pairs(RegisteredKeysByName) do
+                local pos = data.Btn.Position
+                configData.Positions[name] = {
+                    XScale = pos.X.Scale, XOffset = pos.X.Offset,
+                    YScale = pos.Y.Scale, YOffset = pos.Y.Offset
+                }
             end
-         end)
-      end
-   end)
-
-   UserInputService.InputChanged:Connect(function(input)
-      if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-         local delta = input.Position - dragStart
-         btn.Position = UDim2.new(
-            startPos.X.Scale, 
-            startPos.X.Offset + delta.X, 
-            startPos.Y.Scale, 
-            startPos.Y.Offset + delta.Y
-         )
-      end
-   end)
-
-   UserInputService.InputEnded:Connect(function(input)
-      if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-         if isHolding then
-            isHolding = false
-            dragging = false
-            if onHoldEnd then onHoldEnd() end
-         end
-      end
-   end)
-
-   return btn
+            writefile(CONFIG_FILE_NAME, HttpService:JSONEncode(configData))
+        end
+    end)
 end
 
--- Tạo các nút nổi F, G, Q, Sp, 1, 2, 3, 4, LC
-createHoldButton("BtnF", "F", UDim2.new(0.05, 0, 0.12, 0), function()
-   VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.F, false, game)
-end, function()
-   VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.F, false, game)
+-- Hàm đọc cấu hình an toàn
+local function LoadKeypadConfig()
+    pcall(function()
+        if readfile and isfile and isfile(CONFIG_FILE_NAME) and HttpService then
+            local result = HttpService:JSONDecode(readfile(CONFIG_FILE_NAME))
+            if result then
+                if result.Shape then CurrentShape = result.Shape end
+                if result.Size then BaseButtonSize = result.Size end
+                if result.Positions then
+                    for name, posData in pairs(result.Positions) do
+                        if RegisteredKeysByName[name] then
+                            RegisteredKeysByName[name].Btn.Position = UDim2.new(
+                                posData.XScale or 1, posData.XOffset or 0,
+                                posData.YScale or 0.5, posData.YOffset or 0
+                            )
+                        end
+                    end
+                end
+            end
+        end
+    end)
+end
+
+-- Hàm tạo phím (Hỗ trợ 1 phím hoặc tổ hợp phím đi chéo, hỗ trợ Toggle)
+local function CreateCustomButton(name, text, defaultPos, widthMult, keyCodes, isToggle)
+    local btn = Instance.new("TextButton")
+    btn.Name = name
+    btn.Size = UDim2.new(0, BaseButtonSize * widthMult, 0, BaseButtonSize)
+    btn.Position = defaultPos
+    btn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    btn.BackgroundTransparency = 0.4
+    btn.BorderColor3 = Color3.fromRGB(0, 170, 255)
+    btn.BorderSizePixel = 1
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.TextSize = 12
+    btn.Font = Enum.Font.SourceSansBold
+    btn.Text = text
+    btn.Active = true
+    btn.Parent = ScreenGui
+
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 6)
+    corner.Parent = btn
+
+    local isDown = false
+    local toggleState = false
+    local keys = typeof(keyCodes) == "table" and keyCodes or {keyCodes}
+
+    if isToggle then
+        btn.MouseButton1Click:Connect(function()
+            if IsEditingLayout then return end
+            PlayClick()
+            toggleState = not toggleState
+            if toggleState then
+                btn.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+                btn.BackgroundTransparency = 0.1
+            else
+                btn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+                btn.BackgroundTransparency = 0.4
+            end
+            for _, k in ipairs(keys) do
+                pcall(function() VirtualInputManager:SendKeyEvent(toggleState, k, false, game) end)
+            end
+        end)
+    else
+        btn.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                if IsEditingLayout then return end
+                isDown = true
+                PlayClick()
+                btn.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+                btn.BackgroundTransparency = 0.1
+                for _, k in ipairs(keys) do
+                    pcall(function() VirtualInputManager:SendKeyEvent(true, k, false, game) end)
+                end
+            end
+        end)
+
+        btn.InputEnded:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                if isDown then
+                    isDown = false
+                    btn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+                    btn.BackgroundTransparency = 0.4
+                    for _, k in ipairs(keys) do
+                        pcall(function() VirtualInputManager:SendKeyEvent(false, k, false, game) end)
+                    end
+                end
+            end
+        end)
+    end
+
+    local dragging = false
+    local dragInput, dragStart, startPos
+
+    btn.InputBegan:Connect(function(input)
+        if IsEditingLayout and (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
+            dragging = true
+            dragStart = input.Position
+            startPos = btn.Position
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    if dragging then
+                        dragging = false
+                        SaveKeypadConfig()
+                    end
+                end
+            end)
+        end
+    end)
+
+    btn.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if input == dragInput and dragging and IsEditingLayout then
+            local delta = input.Position - dragStart
+            btn.Position = UDim2.new(
+                startPos.X.Scale, startPos.X.Offset + delta.X, 
+                startPos.Y.Scale, startPos.Y.Offset + delta.Y
+            )
+        end
+    end)
+
+    local keyData = { Name = name, Btn = btn, Corner = corner, WidthMult = widthMult }
+    table.insert(RegisteredKeys, keyData)
+    RegisteredKeysByName[name] = keyData
+    return keyData
+end
+
+-------------------------------------------------
+-- 📌 TẠO CÁC NÚT PHÍM ẢO TRÊN MÀN HÌNH
+-------------------------------------------------
+-- Hàng số (1 - 6)
+CreateCustomButton("Num1", "1", UDim2.new(1, -250, 0.15, 0), 0.8, Enum.KeyCode.One)
+CreateCustomButton("Num2", "2", UDim2.new(1, -210, 0.15, 0), 0.8, Enum.KeyCode.Two)
+CreateCustomButton("Num3", "3", UDim2.new(1, -170, 0.15, 0), 0.8, Enum.KeyCode.Three)
+CreateCustomButton("Num4", "4", UDim2.new(1, -130, 0.15, 0), 0.8, Enum.KeyCode.Four)
+CreateCustomButton("Num5", "5", UDim2.new(1, -90, 0.15, 0), 0.8, Enum.KeyCode.Five)
+CreateCustomButton("Num6", "6", UDim2.new(1, -50, 0.15, 0), 0.8, Enum.KeyCode.Six)
+
+-- Hàng Q, E, F, G
+CreateCustomButton("Q", "Q", UDim2.new(1, -250, 0.24, 0), 0.8, Enum.KeyCode.Q)
+CreateCustomButton("E", "E", UDim2.new(1, -210, 0.24, 0), 0.8, Enum.KeyCode.E)
+CreateCustomButton("F", "F", UDim2.new(1, -170, 0.24, 0), 0.8, Enum.KeyCode.F)
+CreateCustomButton("G", "G", UDim2.new(1, -130, 0.24, 0), 0.8, Enum.KeyCode.G)
+
+-- Cụm di chuyển cũ (WA, WD, A, S, D, SA, SD)
+CreateCustomButton("W", "W", UDim2.new(1, -210, 0.33, 0), 1, Enum.KeyCode.W)
+CreateCustomButton("O", "O", UDim2.new(1, -210, 0.33, 0), 1, Enum.KeyCode.O)
+
+CreateCustomButton("A", "A", UDim2.new(1, -215, 0.41, 0), 1, Enum.KeyCode.A)
+CreateCustomButton("S", "S", UDim2.new(1, -170, 0.41, 0), 1, Enum.KeyCode.S)
+CreateCustomButton("D", "D", UDim2.new(1, -125, 0.41, 0), 1, Enum.KeyCode.D)
+
+-- Phím Ctrl (Toggle) & Space
+CreateCustomButton("Ctrl", "Ctrl", UDim2.new(1, -215, 0.57, 0), 1.2, Enum.KeyCode.LeftControl, true)
+CreateCustomButton("Space", "Space", UDim2.new(1, -145, 0.57, 0), 2.2, Enum.KeyCode.Space)
+
+local function UpdateButtonStyles()
+    for _, data in ipairs(RegisteredKeys) do
+        data.Btn.Size = UDim2.new(0, BaseButtonSize * data.WidthMult, 0, BaseButtonSize)
+        if CurrentShape == "Square" then
+            data.Corner.CornerRadius = UDim.new(0, 0)
+        elseif CurrentShape == "Circle" then
+            data.Corner.CornerRadius = UDim.new(0.5, 0)
+        else
+            data.Corner.CornerRadius = UDim.new(0, 6)
+        end
+    end
+end
+
+LoadKeypadConfig()
+UpdateButtonStyles()
+
+-------------------------------------------------
+-- KHỞI TẠO RAYFIELD GUI
+-------------------------------------------------
+local Window = Rayfield:CreateWindow({
+   Name = "⚡ Super Fix Lag & Utilities",
+   LoadingTitle = "Đang tải Giao Diện...",
+   LoadingSubtitle = "by Roblox Studio",
+   ConfigurationSaving = { Enabled = true, FolderName = "FixLagConfig", FileName = "ConfigMenu" },
+   Discord = { Enabled = false },
+   KeySystem = true,
+   KeySettings = {
+      Title = "Nhập Key Để Sử Dụng",
+      Subtitle = "Hệ thống bảo vệ Script",
+      Note = "Key của bạn là: freekey", 
+      FileName = "FixLagKey", 
+      SaveKey = true,
+      GrabKeyFromSite = false,
+      Key = {"freekey"}
+   }
+})
+
+task.spawn(function()
+    repeat task.wait() until Window and Window.Enabled
+    ScreenGui.Enabled = true
 end)
 
-createHoldButton("BtnG", "G", UDim2.new(0.05, 0, 0.20, 0), function()
-   VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.G, false, game)
-end, function()
-   VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.G, false, game)
-end)
+local MainTab = Window:CreateTab("Main", 4483362458)
 
-createHoldButton("BtnQ", "Q", UDim2.new(0.05, 0, 0.28, 0), function()
-   instantTwisted()
-   VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Q, false, game)
-end, function()
-   VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Q, false, game)
-end)
+-------------------------------------------------
+-- MỤC 1: FIX LAG
+-------------------------------------------------
+MainTab:CreateSection("Tối Ưu Đồ Họa (Fix Lag)")
 
-createHoldButton("BtnSpace", "Sp", UDim2.new(0.05, 0, 0.36, 0), function()
-   VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Space, false, game)
-end, function()
-   VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Space, false, game)
-end)
+MainTab:CreateButton({
+   Name = "🔧 Fix Lag 10% (Chỉ tắt bóng đổ)",
+   Callback = function()
+       PlayClick()
+       game:GetService("Lighting").GlobalShadows = false
+       Rayfield:Notify({ Title = "10%", Content = "Đã tắt bóng đổ.", Duration = 2 })
+   end,
+})
 
-createHoldButton("Btn1", "1", UDim2.new(0.05, 0, 0.44, 0), function()
-   VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.One, false, game)
-end, function()
-   VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.One, false, game)
-end)
+MainTab:CreateButton({
+   Name = "⚙️ Fix Lag 50% (Tắt hiệu ứng & hạt)",
+   Callback = function()
+       PlayClick()
+       game:GetService("Lighting").GlobalShadows = false
+       for _, v in pairs(workspace:GetDescendants()) do
+           if v:IsA("ParticleEmitter") or v:IsA("Smoke") or v:IsA("Fire") or v:IsA("Sparkles") then
+               v.Enabled = false
+           end
+       end
+       Rayfield:Notify({ Title = "50%", Content = "Đã tắt hiệu ứng và hạt.", Duration = 2 })
+   end,
+})
 
-createHoldButton("Btn2", "2", UDim2.new(0.05, 0, 0.52, 0), function()
-   VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Two, false, game)
-end, function()
-   VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Two, false, game)
-end)
+MainTab:CreateButton({
+   Name = "🚀 Fix Lag 99% (Tối ưu toàn diện - Nhựa hóa)",
+   Callback = function()
+       PlayClick()
+       local Lighting = game:GetService("Lighting")
+       Lighting.GlobalShadows = false
+       Lighting.FogEnd = 9e9
+       for _, v in pairs(Lighting:GetChildren()) do
+           if v:IsA("PostEffect") then v.Enabled = false end
+       end
+       
+       for _, v in pairs(workspace:GetDescendants()) do
+           if v:IsA("BasePart") and not v:IsA("MeshPart") then
+               v.Material = Enum.Material.SmoothPlastic
+               v.Reflectance = 0
+           elseif v:IsA("Decal") or v:IsA("Texture") then
+               v:Destroy()
+           elseif v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Smoke") or v:IsA("Fire") then
+               v:Destroy()
+           end
+       end
+       Rayfield:Notify({ Title = "99%", Content = "Đã tối ưu hóa tối đa đồ họa.", Duration = 3 })
+   end,
+})
 
-createHoldButton("Btn3", "3", UDim2.new(0.05, 0, 0.60, 0), function()
-   VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Three, false, game)
-end, function()
-   VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Three, false, game)
-end)
+-------------------------------------------------
+-- MỤC 2: TÙY CHỈNH TỪNG NÚT & LƯU CONFIG
+-------------------------------------------------
+MainTab:CreateSection("Tùy Chỉnh Phím Ảo (Tự Động Lưu Vị Trí)")
 
-createHoldButton("Btn4", "4", UDim2.new(0.05, 0, 0.68, 0), function()
-   VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Four, false, game)
-end, function()
-   VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Four, false, game)
-end)
+MainTab:CreateToggle({
+   Name = "⌨️ Hiện Bảng Phím Ảo",
+   CurrentValue = true,
+   Flag = "ToggleVirtualKeypad",
+   Callback = function(Value)
+       PlayClick()
+       ScreenGui.Enabled = Value
+   end,
+})
 
-createHoldButton("BtnMouse", "LC", UDim2.new(0.05, 0, 0.76, 0), function()
-   local mouseX, mouseY = workspace.CurrentCamera.ViewportSize.X / 2, workspace.CurrentCamera.ViewportSize.Y / 2
-   VirtualInputManager:SendMouseButtonEvent(mouseX, mouseY, 0, true, game, 1)
-end, function()
-   local mouseX, mouseY = workspace.CurrentCamera.ViewportSize.X / 2, workspace.CurrentCamera.ViewportSize.Y / 2
-   VirtualInputManager:SendMouseButtonEvent(mouseX, mouseY, 0, false, game, 1)
-end)
+MainTab:CreateToggle({
+   Name = "🔓 Chế Độ Chỉnh Vị Trí Từng Nút (Drag Mode)",
+   CurrentValue = false,
+   Flag = "ToggleEditLayout",
+   Callback = function(Value)
+       PlayClick()
+       IsEditingLayout = Value
+       if Value then
+           Rayfield:Notify({ Title = "Chỉnh vị trí", Content = "Đã BẬT: Hãy dùng tay kéo từng nút đến vị trí mong muốn!", Duration = 3 })
+       else
+           SaveKeypadConfig()
+           Rayfield:Notify({ Title = "Chỉnh vị trí", Content = "Đã TẮT: Đã lưu vị trí thành công.", Duration = 2 })
+       end
+   end,
+})
 
-Rayfield:Notify({
-   Title = "Thành công!",
-   Content = "Đã tổng hợp toàn bộ tính năng và fix lỗi thành công!",
-   Duration = 3,
-   Image = 4483362458,
+MainTab:CreateDropdown({
+   Name = "📐 Hình Dáng Phím",
+   Options = {"Bo Tròn (Rounded)", "Hình Vuông (Square)", "Hình Tròn (Circle)"},
+   CurrentOption = CurrentShape == "Square" and "Hình Vuông (Square)" or (CurrentShape == "Circle" and "Hình Tròn (Circle)" or "Bo Tròn (Rounded)"),
+   Flag = "KeyShapeDropdown",
+   Callback = function(Option)
+       PlayClick()
+       if Option == "Hình Vuông (Square)" then
+           CurrentShape = "Square"
+       elseif Option == "Hình Tròn (Circle)" then
+           CurrentShape = "Circle"
+       else
+           CurrentShape = "Rounded"
+       end
+       UpdateButtonStyles()
+       SaveKeypadConfig()
+   end,
+})
+
+MainTab:CreateSlider({
+   Name = "🔍 Kích Thước Phím",
+   Range = {25, 55},
+   Increment = 1,
+   Suffix = " px",
+   CurrentValue = BaseButtonSize,
+   Flag = "KeySizeSlider",
+   Callback = function(Value)
+       BaseButtonSize = Value
+       UpdateButtonStyles()
+       SaveKeypadConfig()
+   end,
+})
+
+MainTab:CreateButton({
+   Name = "💾 Lưu Vị Trí Phím Thủ Công",
+   Callback = function()
+       PlayClick()
+       SaveKeypadConfig()
+       Rayfield:Notify({ Title = "Thành công", Content = "Đã lưu bố cục thủ công.", Duration = 2 })
+   end,
+})
+
+-------------------------------------------------
+-- MỤC 3: HOLD JUMP & BHOP
+-------------------------------------------------
+MainTab:CreateSection("Tính Năng Di Chuyển")
+
+local HoldJumpEnabled = false
+local IsJumpingKeyHeld = false
+local HoldJumpHeartbeat = nil
+local InputBeganConnection = nil
+local InputEndedConnection = nil
+
+MainTab:CreateToggle({
+   Name = "🦘 Hold Jump (Tự nhảy lại khi đáp đất)",
+   CurrentValue = false,
+   Flag = "HoldJumpToggle",
+   Callback = function(Value)
+       PlayClick()
+       HoldJumpEnabled = Value
+       
+       if HoldJumpEnabled then
+           InputBeganConnection = UserInputService.InputBegan:Connect(function(input, gameProcessed)
+               if not gameProcessed and (input.KeyCode == Enum.KeyCode.Space or input.UserInputType == Enum.UserInputType.Touch) then
+                   IsJumpingKeyHeld = true
+               end
+           end)
+           
+           InputEndedConnection = UserInputService.InputEnded:Connect(function(input)
+               if input.KeyCode == Enum.KeyCode.Space or input.UserInputType == Enum.UserInputType.Touch then
+                   IsJumpingKeyHeld = false
+               end
+           end)
+           
+           HoldJumpHeartbeat = RunService.Heartbeat:Connect(function()
+               pcall(function()
+                   if HoldJumpEnabled and IsJumpingKeyHeld then
+                       local char = LocalPlayer.Character
+                       if char then
+                           local humanoid = char:FindFirstChildOfClass("Humanoid")
+                           if humanoid and humanoid.FloorMaterial ~= Enum.Material.Air then
+                               humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+                           end
+                       end
+                   end
+               end)
+           end)
+           Rayfield:Notify({ Title = "Hold Jump", Content = "Đã BẬT Hold Jump.", Duration = 2 })
+       else
+           IsJumpingKeyHeld = false
+           if HoldJumpHeartbeat then HoldJumpHeartbeat:Disconnect() HoldJumpHeartbeat = nil end
+           if InputBeganConnection then InputBeganConnection:Disconnect() InputBeganConnection = nil end
+           if InputEndedConnection then InputEndedConnection:Disconnect() InputEndedConnection = nil end
+           Rayfield:Notify({ Title = "Hold Jump", Content = "Đã TẮT Hold Jump.", Duration = 2 })
+       end
+   end,
+})
+
+local BhopEnabled = false
+local BhopSpeed = 24
+local BhopConnection = nil
+
+MainTab:CreateToggle({
+   Name = "🐰 Bunny Hop (Bhop gia tốc di chuyển)",
+   CurrentValue = false,
+   Flag = "BhopToggle",
+   Callback = function(Value)
+       PlayClick()
+       BhopEnabled = Value
+       
+       if BhopEnabled then
+           BhopConnection = RunService.Heartbeat:Connect(function()
+               pcall(function()
+                   if BhopEnabled then
+                       local char = LocalPlayer.Character
+                       if char then
+                           local humanoid = char:FindFirstChildOfClass("Humanoid")
+                           local hrp = char:FindFirstChild("HumanoidRootPart")
+                           
+                           if humanoid and hrp then
+                               if humanoid.FloorMaterial ~= Enum.Material.Air and humanoid.MoveDirection.Magnitude > 0 then
+                                   humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+                               end
+                               
+                               if humanoid.MoveDirection.Magnitude > 0 then
+                                   local moveDir = humanoid.MoveDirection
+                                   hrp.AssemblyLinearVelocity = Vector3.new(
+                                       moveDir.X * BhopSpeed,
+                                       hrp.AssemblyLinearVelocity.Y,
+                                       moveDir.Z * BhopSpeed
+                                   )
+                               end
+                           end
+                       end
+                   end
+               end)
+           end)
+           Rayfield:Notify({ Title = "Bhop", Content = "Đã BẬT Bunny Hop.", Duration = 2 })
+       else
+           if BhopConnection then
+               BhopConnection:Disconnect()
+               BhopConnection = nil
+           end
+           Rayfield:Notify({ Title = "Bhop", Content = "Đã TẮT Bunny Hop.", Duration = 2 })
+       end
+   end,
+})
+
+MainTab:CreateSlider({
+   Name = "⚡ Tốc Độ Bhop",
+   Range = {16, 100},
+   Increment = 1,
+   Suffix = " Speed",
+   CurrentValue = 24,
+   Flag = "BhopSpeedSlider",
+   Callback = function(Value)
+       BhopSpeed = Value
+   end,
 })
