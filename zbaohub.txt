@@ -2,7 +2,7 @@
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
-   Name = "Instant Twisted & Skin Script",
+   Name = "Instant Twisted & Fix Lag Script",
    LoadingTitle = "Đang tải Script...",
    LoadingSubtitle = "By AI Collaborator",
    ConfigurationSaving = {
@@ -15,8 +15,8 @@ local Window = Rayfield:CreateWindow({
 local Players = game:GetService("Players")
 local VirtualInputManager = game:GetService("VirtualInputManager")
 local UserInputService = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
-local Camera = workspace.CurrentCamera
+local Lighting = game:GetService("Lighting")
+local Terrain = workspace:FindFirstChildOfClass("Terrain")
 local LocalPlayer = Players.LocalPlayer
 
 ---------------------------------------------------------
@@ -31,7 +31,7 @@ task.spawn(function()
                for _, descendant in ipairs(gui:GetDescendants()) do
                   if descendant:IsA("UIStroke") then
                      descendant.Color = rainbowColor
-                  elseif descendant:IsA("TextLabel") and (descendant.Text == "Instant Twisted & Skin Script" or descendant.Text == "Đang tải Script...") then
+                  elseif descendant:IsA("TextLabel") and (descendant.Text == "Instant Twisted & Fix Lag Script" or descendant.Text == "Đang tải Script...") then
                      descendant.TextColor3 = rainbowColor
                   end
                end
@@ -53,7 +53,7 @@ task.spawn(function()
 end)
 
 ---------------------------------------------------------
--- TAB 1: CHÍNH (INSTANT TWISTED & TARGET LOCK)
+-- TAB 1: CHÍNH (INSTANT TWISTED & FIX LAG)
 ---------------------------------------------------------
 local MainTab = Window:CreateTab("Chính", 4483362458)
 
@@ -79,58 +79,54 @@ MainTab:CreateButton({
    end,
 })
 
--- Biến quản lý Target Lock
-local targetLockEnabled = false
-local lockedTarget = nil
-
-local function getNearestPlayer()
-   local shortestDistance = math.huge
-   local nearestPlayer = nil
-   local myRoot = getRootPart()
-   
-   if not myRoot then return nil end
-
-   for _, player in ipairs(Players:GetPlayers()) do
-      if player ~= LocalPlayer and player.Character then
-         local enemyRoot = player.Character:FindFirstChild("HumanoidRootPart")
-         local enemyHumanoid = player.Character:FindFirstChild("Humanoid")
-         if enemyRoot and enemyHumanoid and enemyHumanoid.Health > 0 then
-            local distance = (myRoot.Position - enemyRoot.Position).Magnitude
-            if distance < shortestDistance then
-               shortestDistance = distance
-               nearestPlayer = player
-            end
-         end
+-- Hàm tính năng Fix Lag
+local function applyFixLag()
+   -- 1. Tối ưu hóa Lighting (Ánh sáng)
+   Lighting.GlobalShadows = false
+   Lighting.FogEnd = 9e9
+   Lighting.Brightness = 2
+   for _, v in ipairs(Lighting:GetChildren()) do
+      if v:IsA("PostEffect") or v:IsA("Sky") or v:IsA("Atmosphere") then
+         v:Destroy()
       end
    end
-   return nearestPlayer
+
+   -- 2. Tắt hiệu ứng cỏ và vật thể nặng của Terrain
+   if Terrain then
+      Terrain.WaterWaveSize = 0
+      Terrain.WaterWaveSpeed = 0
+      Terrain.WaterTransparency = 1
+      Terrain.WaterReflectance = 0
+   end
+
+   -- 3. Tối ưu hóa toàn bộ Part/Mesh trong map (Giảm tải đồ họa, tăng FPS)
+   for _, v in ipairs(workspace:GetDescendants()) do
+      if v:IsA("BasePart") and not v.Parent:FindFirstChild("Humanoid") then
+         v.Material = Enum.Material.SmoothPlastic
+         v.Reflectance = 0
+         if v:IsA("MeshPart") then
+            v.TextureID = ""
+         end
+      elseif v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Fire") or v:IsA("Smoke") or v:IsA("Sparkles") then
+         v:Destroy() -- Xóa hiệu ứng hạt gây tụt FPS
+      end
+   end
+
+   Rayfield:Notify({
+      Title = "Fix Lag Thành Công!",
+      Content = "Đã tối ưu hóa đồ họa và dọn dẹp hiệu ứng để tăng FPS.",
+      Duration = 3,
+      Image = 4483362458,
+   })
 end
 
--- Toggle Bật/Tắt hệ thống Target Lock trong Menu
-MainTab:CreateToggle({
-   Name = "Bật/Tắt Target Lock",
-   CurrentValue = false,
-   Flag = "TargetLockToggle",
-   Callback = function(Value)
-      targetLockEnabled = Value
-      if not Value then
-         lockedTarget = nil
-      end
+-- Nút bấm Fix Lag trong Menu
+MainTab:CreateButton({
+   Name = "Fix Lag (Tăng FPS)",
+   Callback = function()
+      applyFixLag()
    end,
 })
-
--- Vòng lặp camera khóa vào Torso của mục tiêu gần nhất khi được kích hoạt
-RunService.RenderStepped:Connect(function()
-   if targetLockEnabled and lockedTarget and lockedTarget.Character then
-      local torso = lockedTarget.Character:FindFirstChild("Torso") or lockedTarget.Character:FindFirstChild("UpperTorso")
-      local humanoid = lockedTarget.Character:FindFirstChild("Humanoid")
-      if torso and humanoid and humanoid.Health > 0 then
-         Camera.CFrame = CFrame.new(Camera.CFrame.Position, torso.Position)
-      else
-         lockedTarget = nil -- Tự động hủy khóa nếu mục tiêu chết hoặc mất phần thân
-      end
-   end
-end)
 
 ---------------------------------------------------------
 -- TAB 2: SKIN (FAKE HEADLESS & KORBLOX)
@@ -222,7 +218,15 @@ SkinTab:CreateToggle({
    end,
 })
 
-LocalPlayer.CharacterAdded:Connect(function(char)
+LocalPlayer.CharacterAndAdded:Connect(function(char)
+   char:WaitForChild("Humanoid")
+   task.wait(0.5)
+   if headlessEnabled then applyHeadless(char) end
+   if korbloxEnabled then applyKorblox(char) end
+end)
+
+-- Sửa lại sự kiện CharacterAdded cho đúng chuẩn
+Players.LocalPlayer.CharacterAdded:Connect(function(char)
    char:WaitForChild("Humanoid")
    task.wait(0.5)
    if headlessEnabled then applyHeadless(char) end
@@ -230,7 +234,7 @@ LocalPlayer.CharacterAdded:Connect(function(char)
 end)
 
 ---------------------------------------------------------
--- NÚT NỔI 1: NÚT BẤM Q (INSTANT TWISTED)
+-- NÚT NỔI BẤM Q (FLOATING BUTTON)
 ---------------------------------------------------------
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "TwistedFloatingGui"
@@ -271,7 +275,7 @@ task.spawn(function()
    end
 end)
 
--- Kéo thả nút Q
+-- Kéo thả nút nổi Q
 local draggingQ, dragInputQ, dragStartQ, startPosQ
 FloatingBtn.InputBegan:Connect(function(input)
    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -299,87 +303,9 @@ FloatingBtn.MouseButton1Click:Connect(function()
    instantTwisted()
 end)
 
----------------------------------------------------------
--- NÚT NỔI 2: NÚT TARGET LOCK
----------------------------------------------------------
-local LockBtn = Instance.new("TextButton")
-LockBtn.Name = "TargetLockBtn"
-LockBtn.Size = UDim2.new(0, 45, 0, 45)
-LockBtn.Position = UDim2.new(0.1, 0, 0.35, 0) -- Nằm phía dưới nút Q một chút
-LockBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-LockBtn.Text = "L" -- Chữ L tượng trưng cho Lock
-LockBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-LockBtn.TextSize = 18
-LockBtn.Font = Enum.Font.SourceSansBold
-LockBtn.Parent = ScreenGui
-
-local LockUICorner = Instance.new("UICorner")
-LockUICorner.CornerRadius = UDim.new(0.5, 0)
-LockUICorner.Parent = LockBtn
-
-local LockUIStroke = Instance.new("UIStroke")
-LockUIStroke.Thickness = 2.5
-LockUIStroke.Parent = LockBtn
-
-task.spawn(function()
-   while true do
-      LockUIStroke.Color = Color3.fromHSV(tick() % 5 / 5, 1, 1)
-      task.wait(0.05)
-   end
-end)
-
--- Kéo thả nút Target Lock
-local draggingL, dragInputL, dragStartL, startPosL
-LockBtn.InputBegan:Connect(function(input)
-   if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-      draggingL = true
-      dragStartL = input.Position
-      startPosL = LockBtn.Position
-      input.Changed:Connect(function()
-         if input.UserInputState == Enum.UserInputState.End then draggingL = false end
-      end)
-   end
-end)
-LockBtn.InputChanged:Connect(function(input)
-   if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-      dragInputL = input
-   end
-end)
-UserInputService.InputChanged:Connect(function(input)
-   if input == dragInputL and draggingL then
-      local delta = input.Position - dragStartL
-      LockBtn.Position = UDim2.new(startPosL.X.Scale, startPosL.X.Offset + delta.X, startPosL.Y.Scale, startPosL.Y.Offset + delta.Y)
-   end
-end)
-
--- Sự kiện khi bấm vào nút nổi Target Lock
-LockBtn.MouseButton1Click:Connect(function()
-   if not targetLockEnabled then
-      Rayfield:Notify({Title = "Thông báo", Content = "Hãy bật Target Lock trong Menu trước!", Duration = 2, Image = 4483362458})
-      return
-   end
-   
-   if lockedTarget then
-      -- Nếu đang khóa thì bấm lại sẽ mở khóa (unlock)
-      lockedTarget = nil
-      LockBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-      Rayfield:Notify({Title = "Target Lock", Content = "Đã mở khóa mục tiêu!", Duration = 1.5, Image = 4483362458})
-   else
-      -- Tìm người chơi gần nhất để khóa
-      local nearest = getNearestPlayer()
-      if nearest then
-         lockedTarget = nearest
-         LockBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 0) -- Đổi sang màu xanh lá báo hiệu đang lock thành công
-         Rayfield:Notify({Title = "Target Lock", Content = "Đã khóa vào: " .. nearest.Name, Duration = 2, Image = 4483362458})
-      else
-         Rayfield:Notify({Title = "Target Lock", Content = "Không tìm thấy người chơi nào gần đây!", Duration = 2, Image = 4483362458})
-      end
-   end
-end)
-
 Rayfield:Notify({
    Title = "Thành công!",
-   Content = "Đã thêm tính năng Target Lock và nút nổi thứ 2!",
+   Content = "Đã cập nhật script: Xóa Aimlock và thêm Fix Lag!",
    Duration = 3,
    Image = 4483362458,
-end)
+})
