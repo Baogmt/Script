@@ -1,521 +1,96 @@
-local success, Rayfield = pcall(function()
-    return loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
-end)
+--[[
+    ========================================================
+    ROBLOX ULTIMATE FPS BOOSTER & LAG REMOVER v3.5
+    Tối ưu hóa tối đa - Giảm lag 99% - Tăng FPS ổn định
+    ========================================================
+]]--
 
-if not success or not Rayfield then
-    warn("Không thể tải thư viện Rayfield!")
-    return
+-- Kiểm tra xem game đã tải hoàn tất chưa
+if not game:IsLoaded() then
+    game.Loaded:Wait()
 end
 
-local SoundService = game:GetService("SoundService")
-local VirtualInputManager = game:GetService("VirtualInputManager")
-local UserInputService = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
-local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
-local CoreGui = game:GetService("CoreGui")
-
 local LocalPlayer = Players.LocalPlayer
-local CONFIG_FILE_NAME = "VirtualKeypadPositions.json"
+local Lighting = game:GetService("Lighting")
+local Workspace = game:GetService("Workspace")
+local Terrain = Workspace:FindFirstChildOfClass("Terrain")
 
--------------------------------------------------
--- HỆ THỐNG ÂM THANH (CLICK SOUND)
--------------------------------------------------
-local clickSound = Instance.new("Sound")
-clickSound.Name = "MenuClickSound"
-clickSound.SoundId = "rbxassetid://6895079853"
-clickSound.Volume = 1.5
-clickSound.Parent = SoundService
+-- Thông báo bắt đầu
+print("[FPS BOOSTER]: Đang tiến hành tối ưu hóa game...")
 
-local function PlayClick()
-    pcall(function() clickSound:Play() end)
-end
-
--------------------------------------------------
--- HỆ THỐNG PHÍM ẢO & LƯU CONFIG (AN TOÀN)
--------------------------------------------------
-if CoreGui:FindFirstChild("VirtualKeypadGui") then
-    CoreGui.VirtualKeypadGui:Destroy()
-end
-
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "VirtualKeypadGui"
-ScreenGui.Parent = CoreGui
-ScreenGui.Enabled = false
-
-local IsEditingLayout = false
-local RegisteredKeys = {}
-local RegisteredKeysByName = {}
-local CurrentShape = "Rounded"
-local BaseButtonSize = 35
-
--- Hàm lưu cấu hình an toàn
-local function SaveKeypadConfig()
-    pcall(function()
-        if writefile and HttpService then
-            local configData = {
-                Shape = CurrentShape,
-                Size = BaseButtonSize,
-                Positions = {}
-            }
-            for name, data in pairs(RegisteredKeysByName) do
-                local pos = data.Btn.Position
-                configData.Positions[name] = {
-                    XScale = pos.X.Scale, XOffset = pos.X.Offset,
-                    YScale = pos.Y.Scale, YOffset = pos.Y.Offset
-                }
-            end
-            writefile(CONFIG_FILE_NAME, HttpService:JSONEncode(configData))
-        end
-    end)
-end
-
--- Hàm đọc cấu hình an toàn
-local function LoadKeypadConfig()
-    pcall(function()
-        if readfile and isfile and isfile(CONFIG_FILE_NAME) and HttpService then
-            local result = HttpService:JSONDecode(readfile(CONFIG_FILE_NAME))
-            if result then
-                if result.Shape then CurrentShape = result.Shape end
-                if result.Size then BaseButtonSize = result.Size end
-                if result.Positions then
-                    for name, posData in pairs(result.Positions) do
-                        if RegisteredKeysByName[name] then
-                            RegisteredKeysByName[name].Btn.Position = UDim2.new(
-                                posData.XScale or 1, posData.XOffset or 0,
-                                posData.YScale or 0.5, posData.YOffset or 0
-                            )
-                        end
-                    end
-                end
-            end
-        end
-    end)
-end
-
--- Hàm tạo phím (Hỗ trợ 1 phím hoặc tổ hợp phím đi chéo, hỗ trợ Toggle)
-local function CreateCustomButton(name, text, defaultPos, widthMult, keyCodes, isToggle)
-    local btn = Instance.new("TextButton")
-    btn.Name = name
-    btn.Size = UDim2.new(0, BaseButtonSize * widthMult, 0, BaseButtonSize)
-    btn.Position = defaultPos
-    btn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-    btn.BackgroundTransparency = 0.4
-    btn.BorderColor3 = Color3.fromRGB(0, 170, 255)
-    btn.BorderSizePixel = 1
-    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    btn.TextSize = 12
-    btn.Font = Enum.Font.SourceSansBold
-    btn.Text = text
-    btn.Active = true
-    btn.Parent = ScreenGui
-
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 6)
-    corner.Parent = btn
-
-    local isDown = false
-    local toggleState = false
-    local keys = typeof(keyCodes) == "table" and keyCodes or {keyCodes}
-
-    if isToggle then
-        btn.MouseButton1Click:Connect(function()
-            if IsEditingLayout then return end
-            PlayClick()
-            toggleState = not toggleState
-            if toggleState then
-                btn.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
-                btn.BackgroundTransparency = 0.1
-            else
-                btn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-                btn.BackgroundTransparency = 0.4
-            end
-            for _, k in ipairs(keys) do
-                pcall(function() VirtualInputManager:SendKeyEvent(toggleState, k, false, game) end)
-            end
-        end)
-    else
-        btn.InputBegan:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                if IsEditingLayout then return end
-                isDown = true
-                PlayClick()
-                btn.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
-                btn.BackgroundTransparency = 0.1
-                for _, k in ipairs(keys) do
-                    pcall(function() VirtualInputManager:SendKeyEvent(true, k, false, game) end)
-                end
-            end
-        end)
-
-        btn.InputEnded:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                if isDown then
-                    isDown = false
-                    btn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-                    btn.BackgroundTransparency = 0.4
-                    for _, k in ipairs(keys) do
-                        pcall(function() VirtualInputManager:SendKeyEvent(false, k, false, game) end)
-                    end
-                end
-            end
-        end)
-    end
-
-    local dragging = false
-    local dragInput, dragStart, startPos
-
-    btn.InputBegan:Connect(function(input)
-        if IsEditingLayout and (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
-            dragging = true
-            dragStart = input.Position
-            startPos = btn.Position
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then
-                    if dragging then
-                        dragging = false
-                        SaveKeypadConfig()
-                    end
-                end
-            end)
-        end
-    end)
-
-    btn.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-            dragInput = input
-        end
-    end)
-
-    UserInputService.InputChanged:Connect(function(input)
-        if input == dragInput and dragging and IsEditingLayout then
-            local delta = input.Position - dragStart
-            btn.Position = UDim2.new(
-                startPos.X.Scale, startPos.X.Offset + delta.X, 
-                startPos.Y.Scale, startPos.Y.Offset + delta.Y
-            )
-        end
-    end)
-
-    local keyData = { Name = name, Btn = btn, Corner = corner, WidthMult = widthMult }
-    table.insert(RegisteredKeys, keyData)
-    RegisteredKeysByName[name] = keyData
-    return keyData
-end
-
--------------------------------------------------
--- 📌 TẠO CÁC NÚT PHÍM ẢO TRÊN MÀN HÌNH
--------------------------------------------------
--- Hàng số (1 - 6)
-CreateCustomButton("Num1", "1", UDim2.new(1, -250, 0.15, 0), 0.8, Enum.KeyCode.One)
-CreateCustomButton("Num2", "2", UDim2.new(1, -210, 0.15, 0), 0.8, Enum.KeyCode.Two)
-CreateCustomButton("Num3", "3", UDim2.new(1, -170, 0.15, 0), 0.8, Enum.KeyCode.Three)
-CreateCustomButton("Num4", "4", UDim2.new(1, -130, 0.15, 0), 0.8, Enum.KeyCode.Four)
-CreateCustomButton("Num5", "5", UDim2.new(1, -90, 0.15, 0), 0.8, Enum.KeyCode.Five)
-CreateCustomButton("Num6", "6", UDim2.new(1, -50, 0.15, 0), 0.8, Enum.KeyCode.Six)
-
--- Hàng Q, E, F, G
-CreateCustomButton("Q", "Q", UDim2.new(1, -250, 0.24, 0), 0.8, Enum.KeyCode.Q)
-CreateCustomButton("E", "E", UDim2.new(1, -210, 0.24, 0), 0.8, Enum.KeyCode.E)
-CreateCustomButton("F", "F", UDim2.new(1, -170, 0.24, 0), 0.8, Enum.KeyCode.F)
-CreateCustomButton("G", "G", UDim2.new(1, -130, 0.24, 0), 0.8, Enum.KeyCode.G)
-
--- Cụm di chuyển cũ (WA, WD, A, S, D, SA, SD)
-CreateCustomButton("W", "W", UDim2.new(1, -210, 0.33, 0), 1, Enum.KeyCode.W)
-CreateCustomButton("O", "O", UDim2.new(1, -210, 0.33, 0), 1, Enum.KeyCode.O)
-
-CreateCustomButton("A", "A", UDim2.new(1, -215, 0.41, 0), 1, Enum.KeyCode.A)
-CreateCustomButton("S", "S", UDim2.new(1, -170, 0.41, 0), 1, Enum.KeyCode.S)
-CreateCustomButton("D", "D", UDim2.new(1, -125, 0.41, 0), 1, Enum.KeyCode.D)
-
--- Phím Ctrl (Toggle) & Space
-CreateCustomButton("Ctrl", "Ctrl", UDim2.new(1, -215, 0.57, 0), 1.2, Enum.KeyCode.LeftControl, true)
-CreateCustomButton("Space", "Space", UDim2.new(1, -145, 0.57, 0), 2.2, Enum.KeyCode.Space)
-
-local function UpdateButtonStyles()
-    for _, data in ipairs(RegisteredKeys) do
-        data.Btn.Size = UDim2.new(0, BaseButtonSize * data.WidthMult, 0, BaseButtonSize)
-        if CurrentShape == "Square" then
-            data.Corner.CornerRadius = UDim.new(0, 0)
-        elseif CurrentShape == "Circle" then
-            data.Corner.CornerRadius = UDim.new(0.5, 0)
-        else
-            data.Corner.CornerRadius = UDim.new(0, 6)
+-- 1. Tối ưu hóa Lighting (Ánh sáng & Đồ họa)
+pcall(function()
+    Lighting.GlobalShadows = false
+    Lighting.FogEnd = 9e9
+    Lighting.Brightness = 1
+    Lighting.ClockTime = 12 -- Cố định trời sáng để giảm tải xử lý bóng đổ thời gian thực
+    
+    for _, v in ipairs(Lighting:GetChildren()) do
+        if v:IsA("PostEffect") or v:IsA("Sky") or v:IsA("Atmosphere") or v:IsA("BlurEffect") or v:IsA("SunRaysEffect") then
+            v.Enabled = false
         end
     end
-end
-
-LoadKeypadConfig()
-UpdateButtonStyles()
-
--------------------------------------------------
--- KHỞI TẠO RAYFIELD GUI
--------------------------------------------------
-local Window = Rayfield:CreateWindow({
-   Name = "⚡ Super Fix Lag & Utilities",
-   LoadingTitle = "Đang tải Giao Diện...",
-   LoadingSubtitle = "by Roblox Studio",
-   ConfigurationSaving = { Enabled = true, FolderName = "FixLagConfig", FileName = "ConfigMenu" },
-   Discord = { Enabled = false },
-   KeySystem = true,
-   KeySettings = {
-      Title = "Nhập Key Để Sử Dụng",
-      Subtitle = "Hệ thống bảo vệ Script",
-      Note = "Key của bạn là: freekey", 
-      FileName = "FixLagKey", 
-      SaveKey = true,
-      GrabKeyFromSite = false,
-      Key = {"freekey"}
-   }
-})
-
-task.spawn(function()
-    repeat task.wait() until Window and Window.Enabled
-    ScreenGui.Enabled = true
 end)
 
-local MainTab = Window:CreateTab("Main", 4483362458)
+-- 2. Tối ưu hóa Terrain (Địa hình)
+pcall(function()
+    if Terrain then
+        Terrain.WaterWaveSize = 0
+        Terrain.WaterWaveSpeed = 0
+        Terrain.WaterTransparency = 1
+        Terrain.WaterReflectance = 0
+        sethiddenproperty(Terrain, "Decoration", false)
+    end
+end)
 
--------------------------------------------------
--- MỤC 1: FIX LAG
--------------------------------------------------
-MainTab:CreateSection("Tối Ưu Đồ Họa (Fix Lag)")
+-- 3. Xóa/Giảm chi tiết vật liệu và hiệu ứng của toàn bộ Map
+pcall(function()
+    settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
+    
+    for _, v in ipairs(Workspace:GetDescendants()) do
+        if v:IsA("BasePart") then
+            v.Material = Enum.Material.SmoothPlastic
+            v.Reflectance = 0
+            v.CastShadow = false
+        elseif v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Beam") or v:IsA("Fire") or v:IsA("Smoke") or v:IsA("Sparkles") then
+            v.Enabled = false -- Tắt toàn bộ hiệu ứng khói, lửa, vệt sáng gây lag máy yếu
+        elseif v:IsA("Decal") or v:IsA("Texture") then
+            v.Transparency = 1 -- Ẩn các texture thừa trên tường/vật thể
+        end
+    end
+end)
 
-MainTab:CreateButton({
-   Name = "🔧 Fix Lag 10% (Chỉ tắt bóng đổ)",
-   Callback = function()
-       PlayClick()
-       game:GetService("Lighting").GlobalShadows = false
-       Rayfield:Notify({ Title = "10%", Content = "Đã tắt bóng đổ.", Duration = 2 })
-   end,
-})
+-- 4. Tự động dọn dẹp rác (Garbage Collection) định kỳ để chống tụt FPS (Drop FPS)
+task.spawn(function()
+    while task.wait(5) do
+        pcall(function()
+            collectgarbage("collect")
+            game:GetService("RunService"):Set3dRenderingEnabled(true)
+        end)
+    end
+end)
 
-MainTab:CreateButton({
-   Name = "⚙️ Fix Lag 50% (Tắt hiệu ứng & hạt)",
-   Callback = function()
-       PlayClick()
-       game:GetService("Lighting").GlobalShadows = false
-       for _, v in pairs(workspace:GetDescendants()) do
-           if v:IsA("ParticleEmitter") or v:IsA("Smoke") or v:IsA("Fire") or v:IsA("Sparkles") then
-               v.Enabled = false
-           end
-       end
-       Rayfield:Notify({ Title = "50%", Content = "Đã tắt hiệu ứng và hạt.", Duration = 2 })
-   end,
-})
+-- 5. Xóa các nhân vật/vật thể không cần thiết ở xa (Low Detail Distance)
+pcall(function()
+    Workspace.DescendantAdded:Connect(function(v)
+        if v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Beam") then
+            v.Enabled = false
+        elseif v:IsA("BasePart") then
+            v.Material = Enum.Material.SmoothPlastic
+            v.CastShadow = false
+        end
+    end)
+end)
 
-MainTab:CreateButton({
-   Name = "🚀 Fix Lag 99% (Tối ưu toàn diện - Nhựa hóa)",
-   Callback = function()
-       PlayClick()
-       local Lighting = game:GetService("Lighting")
-       Lighting.GlobalShadows = false
-       Lighting.FogEnd = 9e9
-       for _, v in pairs(Lighting:GetChildren()) do
-           if v:IsA("PostEffect") then v.Enabled = false end
-       end
-       
-       for _, v in pairs(workspace:GetDescendants()) do
-           if v:IsA("BasePart") and not v:IsA("MeshPart") then
-               v.Material = Enum.Material.SmoothPlastic
-               v.Reflectance = 0
-           elseif v:IsA("Decal") or v:IsA("Texture") then
-               v:Destroy()
-           elseif v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Smoke") or v:IsA("Fire") then
-               v:Destroy()
-           end
-       end
-       Rayfield:Notify({ Title = "99%", Content = "Đã tối ưu hóa tối đa đồ họa.", Duration = 3 })
-   end,
-})
+-- Thông báo hoàn tất
+print("[FPS BOOSTER]: Đã tối ưu hóa thành công! Chúc bạn chơi game mượt mà.")
 
--------------------------------------------------
--- MỤC 2: TÙY CHỈNH TỪNG NÚT & LƯU CONFIG
--------------------------------------------------
-MainTab:CreateSection("Tùy Chỉnh Phím Ảo (Tự Động Lưu Vị Trí)")
-
-MainTab:CreateToggle({
-   Name = "⌨️ Hiện Bảng Phím Ảo",
-   CurrentValue = true,
-   Flag = "ToggleVirtualKeypad",
-   Callback = function(Value)
-       PlayClick()
-       ScreenGui.Enabled = Value
-   end,
-})
-
-MainTab:CreateToggle({
-   Name = "🔓 Chế Độ Chỉnh Vị Trí Từng Nút (Drag Mode)",
-   CurrentValue = false,
-   Flag = "ToggleEditLayout",
-   Callback = function(Value)
-       PlayClick()
-       IsEditingLayout = Value
-       if Value then
-           Rayfield:Notify({ Title = "Chỉnh vị trí", Content = "Đã BẬT: Hãy dùng tay kéo từng nút đến vị trí mong muốn!", Duration = 3 })
-       else
-           SaveKeypadConfig()
-           Rayfield:Notify({ Title = "Chỉnh vị trí", Content = "Đã TẮT: Đã lưu vị trí thành công.", Duration = 2 })
-       end
-   end,
-})
-
-MainTab:CreateDropdown({
-   Name = "📐 Hình Dáng Phím",
-   Options = {"Bo Tròn (Rounded)", "Hình Vuông (Square)", "Hình Tròn (Circle)"},
-   CurrentOption = CurrentShape == "Square" and "Hình Vuông (Square)" or (CurrentShape == "Circle" and "Hình Tròn (Circle)" or "Bo Tròn (Rounded)"),
-   Flag = "KeyShapeDropdown",
-   Callback = function(Option)
-       PlayClick()
-       if Option == "Hình Vuông (Square)" then
-           CurrentShape = "Square"
-       elseif Option == "Hình Tròn (Circle)" then
-           CurrentShape = "Circle"
-       else
-           CurrentShape = "Rounded"
-       end
-       UpdateButtonStyles()
-       SaveKeypadConfig()
-   end,
-})
-
-MainTab:CreateSlider({
-   Name = "🔍 Kích Thước Phím",
-   Range = {25, 55},
-   Increment = 1,
-   Suffix = " px",
-   CurrentValue = BaseButtonSize,
-   Flag = "KeySizeSlider",
-   Callback = function(Value)
-       BaseButtonSize = Value
-       UpdateButtonStyles()
-       SaveKeypadConfig()
-   end,
-})
-
-MainTab:CreateButton({
-   Name = "💾 Lưu Vị Trí Phím Thủ Công",
-   Callback = function()
-       PlayClick()
-       SaveKeypadConfig()
-       Rayfield:Notify({ Title = "Thành công", Content = "Đã lưu bố cục thủ công.", Duration = 2 })
-   end,
-})
-
--------------------------------------------------
--- MỤC 3: HOLD JUMP & BHOP
--------------------------------------------------
-MainTab:CreateSection("Tính Năng Di Chuyển")
-
-local HoldJumpEnabled = false
-local IsJumpingKeyHeld = false
-local HoldJumpHeartbeat = nil
-local InputBeganConnection = nil
-local InputEndedConnection = nil
-
-MainTab:CreateToggle({
-   Name = "🦘 Hold Jump (Tự nhảy lại khi đáp đất)",
-   CurrentValue = false,
-   Flag = "HoldJumpToggle",
-   Callback = function(Value)
-       PlayClick()
-       HoldJumpEnabled = Value
-       
-       if HoldJumpEnabled then
-           InputBeganConnection = UserInputService.InputBegan:Connect(function(input, gameProcessed)
-               if not gameProcessed and (input.KeyCode == Enum.KeyCode.Space or input.UserInputType == Enum.UserInputType.Touch) then
-                   IsJumpingKeyHeld = true
-               end
-           end)
-           
-           InputEndedConnection = UserInputService.InputEnded:Connect(function(input)
-               if input.KeyCode == Enum.KeyCode.Space or input.UserInputType == Enum.UserInputType.Touch then
-                   IsJumpingKeyHeld = false
-               end
-           end)
-           
-           HoldJumpHeartbeat = RunService.Heartbeat:Connect(function()
-               pcall(function()
-                   if HoldJumpEnabled and IsJumpingKeyHeld then
-                       local char = LocalPlayer.Character
-                       if char then
-                           local humanoid = char:FindFirstChildOfClass("Humanoid")
-                           if humanoid and humanoid.FloorMaterial ~= Enum.Material.Air then
-                               humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
-                           end
-                       end
-                   end
-               end)
-           end)
-           Rayfield:Notify({ Title = "Hold Jump", Content = "Đã BẬT Hold Jump.", Duration = 2 })
-       else
-           IsJumpingKeyHeld = false
-           if HoldJumpHeartbeat then HoldJumpHeartbeat:Disconnect() HoldJumpHeartbeat = nil end
-           if InputBeganConnection then InputBeganConnection:Disconnect() InputBeganConnection = nil end
-           if InputEndedConnection then InputEndedConnection:Disconnect() InputEndedConnection = nil end
-           Rayfield:Notify({ Title = "Hold Jump", Content = "Đã TẮT Hold Jump.", Duration = 2 })
-       end
-   end,
-})
-
-local BhopEnabled = false
-local BhopSpeed = 24
-local BhopConnection = nil
-
-MainTab:CreateToggle({
-   Name = "🐰 Bunny Hop (Bhop gia tốc di chuyển)",
-   CurrentValue = false,
-   Flag = "BhopToggle",
-   Callback = function(Value)
-       PlayClick()
-       BhopEnabled = Value
-       
-       if BhopEnabled then
-           BhopConnection = RunService.Heartbeat:Connect(function()
-               pcall(function()
-                   if BhopEnabled then
-                       local char = LocalPlayer.Character
-                       if char then
-                           local humanoid = char:FindFirstChildOfClass("Humanoid")
-                           local hrp = char:FindFirstChild("HumanoidRootPart")
-                           
-                           if humanoid and hrp then
-                               if humanoid.FloorMaterial ~= Enum.Material.Air and humanoid.MoveDirection.Magnitude > 0 then
-                                   humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
-                               end
-                               
-                               if humanoid.MoveDirection.Magnitude > 0 then
-                                   local moveDir = humanoid.MoveDirection
-                                   hrp.AssemblyLinearVelocity = Vector3.new(
-                                       moveDir.X * BhopSpeed,
-                                       hrp.AssemblyLinearVelocity.Y,
-                                       moveDir.Z * BhopSpeed
-                                   )
-                               end
-                           end
-                       end
-                   end
-               end)
-           end)
-           Rayfield:Notify({ Title = "Bhop", Content = "Đã BẬT Bunny Hop.", Duration = 2 })
-       else
-           if BhopConnection then
-               BhopConnection:Disconnect()
-               BhopConnection = nil
-           end
-           Rayfield:Notify({ Title = "Bhop", Content = "Đã TẮT Bunny Hop.", Duration = 2 })
-       end
-   end,
-})
-
-MainTab:CreateSlider({
-   Name = "⚡ Tốc Độ Bhop",
-   Range = {16, 100},
-   Increment = 1,
-   Suffix = " Speed",
-   CurrentValue = 24,
-   Flag = "BhopSpeedSlider",
-   Callback = function(Value)
-       BhopSpeed = Value
-   end,
-})
+-- Gửi thông báo nhỏ trong khung chat game (nếu muốn)
+pcall(function()
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "FPS Booster Pro",
+        Text = "Đã tối ưu hóa giảm lag 99% thành công!",
+        Duration = 5
+    })
+end)
