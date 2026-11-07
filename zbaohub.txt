@@ -1,96 +1,125 @@
---[[
-    ========================================================
-    ROBLOX ULTIMATE FPS BOOSTER & LAG REMOVER v3.5
-    Tối ưu hóa tối đa - Giảm lag 99% - Tăng FPS ổn định
-    ========================================================
-]]--
+-- Tải thư viện Rayfield UI
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
--- Kiểm tra xem game đã tải hoàn tất chưa
-if not game:IsLoaded() then
-    game.Loaded:Wait()
+-- Tạo Cửa sổ (Window)
+local Window = Rayfield:CreateWindow({
+   Name = "Footstep Sound - Ultra Volume",
+   LoadingTitle = "Đang tải script...",
+   ConfigurationSaving = { Enabled = false },
+   Discord = { Enabled = false },
+   KeySystem = false
+})
+
+local MainTab = Window:CreateTab("Cấu Hình Âm Thanh", 4483362458)
+
+-- Biến cấu hình
+local soundEnabled = false
+local soundSource = "https://files.catbox.moe/ixpw3t.mp3"
+local soundVolume = 10 -- Mặc định để to
+local stepCooldown = 0.35
+local boostMultiplier = 3 -- Số lượng kênh âm thanh phát cùng lúc để kích to tiếng
+
+-- Tạo sẵn danh sách các Sound Object để phát cộng hưởng
+local soundPool = {}
+local SoundService = game:GetService("SoundService")
+
+local function createSoundPool()
+    -- Xóa pool cũ nếu có
+    for _, sound in ipairs(soundPool) do
+        sound:Destroy()
+    end
+    soundPool = {}
+    
+    -- Tạo mới các kênh phát âm thanh
+    for i = 1, boostMultiplier do
+        local snd = Instance.new("Sound")
+        snd.Name = "BoostedFootstep_" .. i
+        snd.SoundId = soundSource
+        snd.Volume = soundVolume
+        snd.Parent = SoundService
+        table.insert(soundPool, snd)
+    end
 end
 
+createSoundPool()
+
+-- Logic phát âm thanh khi di chuyển
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
-local Lighting = game:GetService("Lighting")
-local Workspace = game:GetService("Workspace")
-local Terrain = Workspace:FindFirstChildOfClass("Terrain")
+local lastStepTime = 0
 
--- Thông báo bắt đầu
-print("[FPS BOOSTER]: Đang tiến hành tối ưu hóa game...")
-
--- 1. Tối ưu hóa Lighting (Ánh sáng & Đồ họa)
-pcall(function()
-    Lighting.GlobalShadows = false
-    Lighting.FogEnd = 9e9
-    Lighting.Brightness = 1
-    Lighting.ClockTime = 12 -- Cố định trời sáng để giảm tải xử lý bóng đổ thời gian thực
+game:GetService("RunService").Heartbeat:Connect(function()
+    if not soundEnabled then return end
     
-    for _, v in ipairs(Lighting:GetChildren()) do
-        if v:IsA("PostEffect") or v:IsA("Sky") or v:IsA("Atmosphere") or v:IsA("BlurEffect") or v:IsA("SunRaysEffect") then
-            v.Enabled = false
+    local character = LocalPlayer.Character
+    if character and character:FindFirstChild("Humanoid") and character:FindFirstChild("HumanoidRootPart") then
+        local humanoid = character.Humanoid
+        local rootPart = character.HumanoidRootPart
+        
+        local isMoving = rootPart.Velocity.Magnitude > 2 and humanoid.MoveDirection.Magnitude > 0
+        local isGrounded = humanoid.FloorMaterial ~= Enum.Material.Air
+        
+        if isMoving and isGrounded then
+            local currentTime = tick()
+            if currentTime - lastStepTime >= stepCooldown then
+                lastStepTime = currentTime
+                
+                -- Phát đồng thời tất cả các kênh tiếng trong Pool để kích âm lượng cực đại
+                for _, snd in ipairs(soundPool) do
+                    snd.SoundId = soundSource
+                    snd.Volume = soundVolume
+                    snd:Play()
+                end
+            end
         end
     end
 end)
 
--- 2. Tối ưu hóa Terrain (Địa hình)
-pcall(function()
-    if Terrain then
-        Terrain.WaterWaveSize = 0
-        Terrain.WaterWaveSpeed = 0
-        Terrain.WaterTransparency = 1
-        Terrain.WaterReflectance = 0
-        sethiddenproperty(Terrain, "Decoration", false)
-    end
-end)
+--- GIAO DIỆN RAYFIELD ---
 
--- 3. Xóa/Giảm chi tiết vật liệu và hiệu ứng của toàn bộ Map
-pcall(function()
-    settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
-    
-    for _, v in ipairs(Workspace:GetDescendants()) do
-        if v:IsA("BasePart") then
-            v.Material = Enum.Material.SmoothPlastic
-            v.Reflectance = 0
-            v.CastShadow = false
-        elseif v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Beam") or v:IsA("Fire") or v:IsA("Smoke") or v:IsA("Sparkles") then
-            v.Enabled = false -- Tắt toàn bộ hiệu ứng khói, lửa, vệt sáng gây lag máy yếu
-        elseif v:IsA("Decal") or v:IsA("Texture") then
-            v.Transparency = 1 -- Ẩn các texture thừa trên tường/vật thể
-        end
-    end
-end)
+MainTab:CreateToggle({
+   Name = "Bật Âm Thanh Bước Chân",
+   CurrentValue = false,
+   Flag = "FootstepToggle",
+   Callback = function(Value)
+       soundEnabled = Value
+   end,
+})
 
--- 4. Tự động dọn dẹp rác (Garbage Collection) định kỳ để chống tụt FPS (Drop FPS)
-task.spawn(function()
-    while task.wait(5) do
-        pcall(function()
-            collectgarbage("collect")
-            game:GetService("RunService"):Set3dRenderingEnabled(true)
-        end)
-    end
-end)
+MainTab:CreateSlider({
+   Name = "Âm Lượng (Volume)",
+   Range = {0, 50}, -- Cho phép chỉnh lên mức 50 (mặc định Roblox chỉ tới 10)
+   Increment = 1,
+   Suffix = "x",
+   CurrentValue = 10,
+   Flag = "VolumeSlider",
+   Callback = function(Value) 
+       soundVolume = Value
+       for _, snd in ipairs(soundPool) do
+           snd.Volume = soundVolume
+       end
+   end,
+})
 
--- 5. Xóa các nhân vật/vật thể không cần thiết ở xa (Low Detail Distance)
-pcall(function()
-    Workspace.DescendantAdded:Connect(function(v)
-        if v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Beam") then
-            v.Enabled = false
-        elseif v:IsA("BasePart") then
-            v.Material = Enum.Material.SmoothPlastic
-            v.CastShadow = false
-        end
-    end)
-end)
+MainTab:CreateSlider({
+   Name = "Độ Kích Âm (Chèn Thêm Kênh Tiếng)",
+   Range = {1, 5}, -- Phát từ 1 đến 5 lớp âm thanh cùng lúc
+   Increment = 1,
+   Suffix = " lớp tiếng",
+   CurrentValue = 3,
+   Flag = "BoostSlider",
+   Callback = function(Value)
+       boostMultiplier = Value
+       createSoundPool()
+   end,
+})
 
--- Thông báo hoàn tất
-print("[FPS BOOSTER]: Đã tối ưu hóa thành công! Chúc bạn chơi game mượt mà.")
-
--- Gửi thông báo nhỏ trong khung chat game (nếu muốn)
-pcall(function()
-    game:GetService("StarterGui"):SetCore("SendNotification", {
-        Title = "FPS Booster Pro",
-        Text = "Đã tối ưu hóa giảm lag 99% thành công!",
-        Duration = 5
-    })
-end)
+MainTab:CreateSlider({
+   Name = "Tốc Độ Nhịp Bước (Cooldown)",
+   Range = {0.1, 1},
+   Increment = 0.05,
+   Suffix = "s",
+   CurrentValue = 0.35,
+   Flag = "CooldownSlider",
+   Callback = function(Value) stepCooldown = Value end,
+})
